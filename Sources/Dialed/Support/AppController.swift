@@ -161,8 +161,9 @@ final class AppController: ObservableObject {
 
     /// Claim the buds' controls: become "now playing" and keep the audio link active.
     private func activateInput() {
-        remote.activate()
+        remote.title = currentModeInfo.name
         if let d = audio.device {
+            remote.activate()
             keepAlive.start(on: d.id)
             decoder.reset(level: audio.volume)
             decoder.settle(until: ProcessInfo.processInfo.systemUptime + 0.8)
@@ -171,7 +172,8 @@ final class AppController: ObservableObject {
         }
         keepAliveRunning = keepAlive.isRunning
         if let err = keepAlive.lastError { report("Couldn’t keep the buds’ audio link open: \(err)") }
-        diagnostics.log(.system, "Input active — Dialed receives the dial")
+        diagnostics.log(.system, audio.device == nil ? "Dialed on — waiting for the buds to connect"
+                                                     : "Input active — Dialed receives the dial")
     }
 
     /// Give the buds back to macOS: presses and turns behave exactly as without Dialed.
@@ -202,7 +204,7 @@ final class AppController: ObservableObject {
             engine.resetMotion()
             if settings.enabled {
                 keepAlive.start(on: device.id)
-                remote.reassert()
+                remote.activate()
                 moveToRestLevelIfNeeded()
                 hud.show(.init(symbol: "earbuds", title: "Buds connected", subtitle: currentModeInfo.name), settings: settings)
             }
@@ -211,6 +213,8 @@ final class AppController: ObservableObject {
             buds = .searching
             budsVolume = nil
             keepAlive.stop()
+            // Buds in the case: give media controls back to macOS and leave Now Playing.
+            remote.deactivate()
             appSwitcher.commit()
             scroller.stop()
             radial.hide()
@@ -298,7 +302,7 @@ final class AppController: ObservableObject {
             self.engine.resetMotion()
             if self.settings.enabled, let d = self.audio.device {
                 self.keepAlive.start(on: d.id)
-                self.remote.reassert()
+                self.remote.activate()
             }
             self.keepAliveRunning = self.keepAlive.isRunning
         }
@@ -336,6 +340,7 @@ final class AppController: ObservableObject {
             appSwitcher.commit()
             scroller.stop()
             currentMode = to
+            remote.title = settings.modeName(to)
             if to != from { diagnostics.log(.mode, "Mode: \(settings.modeName(to))") }
             moveToRestLevelIfNeeded()
             let info = settings.modeInfo(to)

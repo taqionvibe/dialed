@@ -74,6 +74,8 @@ public final class SilentKeepAlive {
 public final class RemoteCommandReceiver {
     public var onCommand: ((RemoteCommand, TimeInterval) -> Void)?
     public private(set) var isActive = false
+    /// Shown in Control Center / Now Playing while Dialed holds the controls.
+    public var title = "Dialed" { didSet { if isActive && !isYielding { reassert() } } }
     private var tokens: [(MPRemoteCommand, Any)] = []
 
     public init() {}
@@ -102,8 +104,8 @@ public final class RemoteCommandReceiver {
     public func reassert() {
         let info = MPNowPlayingInfoCenter.default()
         info.nowPlayingInfo = [
-            MPMediaItemPropertyTitle: "Dial ready",
-            MPMediaItemPropertyArtist: "Dialed",
+            MPMediaItemPropertyTitle: title,
+            MPMediaItemPropertyArtist: "Dialed · CMF Buds Pro 2 dial",
             MPNowPlayingInfoPropertyPlaybackRate: 1.0,
         ]
         info.playbackState = .playing
