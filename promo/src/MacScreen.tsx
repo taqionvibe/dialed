@@ -52,7 +52,7 @@ const defaultTitle: Record<ScreenKind, string> = {
   volume: 'Music',
 };
 
-function content(kind: ScreenKind, steps: number, w: number, h: number) {
+export function content(kind: ScreenKind, steps: number, w: number, h: number) {
   switch (kind) {
     case 'scroll':
       return <Article offset={steps * 170} w={w} />;
