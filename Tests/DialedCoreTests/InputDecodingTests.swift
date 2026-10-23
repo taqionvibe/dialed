@@ -101,7 +101,7 @@ final class MotionTests: XCTestCase {
     func testFastSpinAccelerates() {
         var s = SpinTracker()
         _ = s.multiplier(steps: 1, at: 0, acceleration: 1)
-        XCTAssertEqual(s.multiplier(steps: 1, at: 0.45, acceleration: 1), 3, accuracy: 0.001)
+        XCTAssertEqual(s.multiplier(steps: 1, at: 0.55, acceleration: 1), 5, accuracy: 0.001)
         XCTAssertGreaterThan(s.multiplier(steps: 1, at: 1.1, acceleration: 0.5), 1)
     }
 

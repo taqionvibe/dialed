@@ -23,7 +23,7 @@ final class RadialModel: ObservableObject {
 /// press chooses. It never takes keyboard focus away from the user's app.
 @MainActor
 final class RadialMenuController {
-    static let size = CGSize(width: 400, height: 400)
+    static let size = CGSize(width: 480, height: 480)
     private let model = RadialModel()
     private lazy var panel = OverlayPanel(size: Self.size) { RadialMenuView(model: model) }
     private var hideWork: DispatchWorkItem?
@@ -105,10 +105,10 @@ struct RadialMenuView: View {
         let segment = 1.0 / Double(n)
         return ZStack {
             Circle()
-                .fill(.ultraThinMaterial)
-                .overlay(Circle().fill(Color.black.opacity(0.28)))
+                .fill(.regularMaterial)
+                .overlay(Circle().fill(Color.black.opacity(0.42)))
                 .overlay(Circle().strokeBorder(.white.opacity(0.14), lineWidth: 0.75))
-                .shadow(color: .black.opacity(0.35), radius: 30, y: 10)
+                .shadow(color: .black.opacity(0.32), radius: 22, y: 8)
                 .frame(width: 360, height: 360)
 
             // Inner track + indicator arc: reads like the needle of a dial and glides

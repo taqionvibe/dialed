@@ -122,7 +122,7 @@ final class DialEngineTests: XCTestCase {
         let e = engine { $0.sensitivity.acceleration = 1; $0.sensitivity.scrollPixelsPerClick = 100 }
         _ = e.switchMode(BuiltinMode.scroll.id)
         XCTAssertEqual(e.handle(.turn(steps: 1, at: 0)), [.output(.scroll(points: 100, horizontal: false), mode: e.mode)])
-        XCTAssertEqual(e.handle(.turn(steps: 1, at: 0.45)), [.output(.scroll(points: 300, horizontal: false), mode: e.mode)])
+        XCTAssertEqual(e.handle(.turn(steps: 1, at: 0.55)), [.output(.scroll(points: 500, horizontal: false), mode: e.mode)])
     }
 
     func testScrollPressTogglesAxis() {
@@ -141,8 +141,8 @@ final class DialEngineTests: XCTestCase {
         let e = engine { s in s.customModes = [custom]; s.sensitivity.acceleration = 1 }
         _ = e.switchMode(custom.modeID)
         _ = e.handle(.turn(steps: 1, at: 0))
-        XCTAssertEqual(e.handle(.turn(steps: 1, at: 0.45)),
-                       [.output(.perform(.keyboardShortcut(combo: KeyCombo(KeyCode.downArrow)), count: 3), mode: custom.modeID)])
+        XCTAssertEqual(e.handle(.turn(steps: 1, at: 0.55)),
+                       [.output(.perform(.keyboardShortcut(combo: KeyCombo(KeyCode.downArrow)), count: 5), mode: custom.modeID)])
         XCTAssertEqual(e.handle(.press(.single, at: 1)), [.output(.perform(.typeText(text: "hi"), count: 1), mode: custom.modeID)])
     }
 

@@ -184,7 +184,7 @@ struct DialPage: View {
                 LabeledSlider(title: "Scroll distance per click", value: app.binding(\.sensitivity.scrollPixelsPerClick),
                               range: 20...800, step: 10, format: { "\(Int($0)) pt" })
                 LabeledSlider(title: "Fast-spin boost", value: app.binding(\.sensitivity.acceleration),
-                              range: 0...1, step: 0.05, format: { $0 == 0 ? "Off" : "up to \(String(format: "%.1f", 1 + 2 * $0))×" })
+                              range: 0...1, step: 0.05, format: { $0 == 0 ? "Off" : "up to \(String(format: "%.1f", 1 + 4 * $0))×" })
                 LabeledSlider(title: "Brightness per click", value: app.binding(\.sensitivity.brightnessStep),
                               range: 0.01...0.25, step: 0.01, format: { "\(Int(($0 * 100).rounded()))%" })
                 Stepper("Seek presses per click: \(app.settings.sensitivity.seekPressesPerClick)",
@@ -257,7 +257,7 @@ struct HardwareFactsView: View {
             fact("checkmark.circle.fill", .green, "Single / double press", "Arrive as play-pause / next track.")
             fact("checkmark.circle.fill", .green, "Triple press", "Arrives as previous track — only if Nothing X sets Triple to “Previous track”.")
             fact("xmark.circle.fill", .red, "Press and hold", "Never reaches macOS. It can’t be used on a Mac.")
-            fact("exclamationmark.circle.fill", .orange, "Fast spins", "The buds send about two clicks per second; Dialed boosts fast spins to make up for dropped clicks.")
+            fact("exclamationmark.circle.fill", .orange, "Fast spins", "The buds report about one click every half second while spinning; Dialed boosts fast spins to make up for dropped clicks.")
         }
         .font(.callout)
     }

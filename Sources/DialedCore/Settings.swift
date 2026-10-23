@@ -3,8 +3,8 @@ import Foundation
 public struct Sensitivity: Codable, Hashable, Sendable {
     /// Pixels scrolled per dial click.
     public var scrollPixelsPerClick: Double = 160
-    /// 0 = off … 1 = fast spins move up to 3×.
-    public var acceleration: Double = 0.6
+    /// 0 = off … 1 = fast spins move up to 5×.
+    public var acceleration: Double = 0.75
     /// Brightness change per click, 0…1.
     public var brightnessStep: Double = 0.0625
     /// Arrow-key presses per click in Video Seek.

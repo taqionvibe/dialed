@@ -5,9 +5,10 @@ import Foundation
 /// first click after a direction change always stay exact.
 public struct SpinTracker: Sendable {
     /// Reports slower than this are deliberate single clicks (multiplier 1).
-    public var slowInterval: TimeInterval = 0.9
-    /// Reports at or faster than this are a full-speed spin.
-    public var fastInterval: TimeInterval = 0.45
+    public var slowInterval: TimeInterval = 1.0
+    /// Reports at or faster than this are a full-speed spin. Hardware: a fast spin
+    /// reaches the Mac as one report every ~0.5–0.65 s (the buds drop the rest).
+    public var fastInterval: TimeInterval = 0.55
 
     private var lastAt: TimeInterval?
     private var lastDirection = 0
@@ -16,7 +17,7 @@ public struct SpinTracker: Sendable {
 
     public mutating func reset() { lastAt = nil; lastDirection = 0 }
 
-    /// - Parameter acceleration: 0 (off) … 1 (fast spins move up to 3×).
+    /// - Parameter acceleration: 0 (off) … 1 (fast spins move up to 5×).
     public mutating func multiplier(steps: Int, at time: TimeInterval, acceleration: Double) -> Double {
         let direction = steps.signum()
         defer { lastAt = time; lastDirection = direction }
@@ -24,7 +25,8 @@ public struct SpinTracker: Sendable {
         let interval = time - lastAt
         if interval >= slowInterval { return 1 }
         let t = min(1, max(0, (slowInterval - interval) / (slowInterval - fastInterval)))
-        return 1 + t * 2 * min(1, acceleration)
+        // Ease-in so medium speeds stay controllable and full spins really fly.
+        return 1 + t * t * 4 * min(1, acceleration)
     }
 }
 

@@ -126,7 +126,7 @@ struct HUDView: View {
         .fixedSize()
         .background(.regularMaterial, in: Capsule())
         .overlay(Capsule().strokeBorder(.white.opacity(0.12), lineWidth: 0.5))
-        .shadow(color: .black.opacity(0.22), radius: 18, y: 6)
+        .shadow(color: .black.opacity(0.22), radius: 14, y: 5)
         .environment(\.colorScheme, .dark)
         .accessibilityElement(children: .combine)
         .accessibilityLabel([c.title, c.subtitle].compactMap { $0 }.joined(separator: ", "))
