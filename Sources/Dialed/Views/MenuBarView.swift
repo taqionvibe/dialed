@@ -7,17 +7,71 @@ struct MenuBarView: View {
     @EnvironmentObject private var app: AppController
     @Environment(\.dismiss) private var dismiss
 
+    /// The middle area keeps one height in every state: MenuBarExtra windows on
+    /// macOS 27 don't shrink when content gets shorter, which left an empty band.
+    static let bodyHeight: CGFloat = 300
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             header
-            if app.enabled { status }
-            if app.enabled && app.isReady { modeGrid }
-            if let error = app.lastError { errorBanner(error) }
+            Group {
+                if !app.enabled { offCard }
+                else if app.isReady { readyBody }
+                else { setupBody }
+            }
+            .frame(height: Self.bodyHeight, alignment: .top)
             Divider()
             footer
         }
         .padding(16)
         .frame(width: 340)
+    }
+
+    private var readyBody: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            status
+            if let error = app.lastError { errorBanner(error) }
+            ScrollView { modeGrid }
+                .scrollIndicators(.automatic)
+        }
+    }
+
+    private var setupBody: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            status
+            if let error = app.lastError { errorBanner(error) }
+            Spacer(minLength: 0)
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Finish setup to use the dial", systemImage: "checklist").font(.callout.weight(.semibold))
+                Text("Dialed needs the buds connected and Accessibility allowed. The setup guide walks you through it.")
+                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                Button("Open Setup Guide") { dismiss(); WindowManager.shared.showOnboarding() }
+                    .controlSize(.small)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
+        }
+    }
+
+    private var offCard: some View {
+        VStack(spacing: 12) {
+            Spacer(minLength: 0)
+            Image(systemName: "dial.low")
+                .font(.system(size: 40, weight: .light))
+                .foregroundStyle(.secondary)
+            Text("Dialed is off").font(.title3.weight(.semibold))
+            Text("Your buds work normally: turning changes the volume and presses control your music.")
+                .font(.callout).foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 12)
+            Button("Turn On") { app.setEnabled(true) }
+                .buttonStyle(.borderedProminent)
+                .tint(Theme.accent)
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var header: some View {
@@ -162,3 +216,4 @@ private struct FooterButton: View {
         .onHover { hovering = $0 }
     }
 }
+
