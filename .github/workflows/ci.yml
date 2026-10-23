@@ -15,7 +15,7 @@ jobs:
     name: Test & build
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -39,7 +39,7 @@ jobs:
           /usr/libexec/PlistBuddy -c "Print :LSUIElement" build/Dialed.app/Contents/Info.plist | grep -q true
 
       - name: Upload app
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: Dialed-app
           path: build/Dialed.zip
@@ -50,6 +50,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          PRERELEASE=()
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then PRERELEASE=(--prerelease); fi
           gh release create "$GITHUB_REF_NAME" build/Dialed.zip \
             --title "Dialed ${GITHUB_REF_NAME#v}" \
-            --notes-file docs/RELEASE_NOTES.md
+            --notes-file docs/RELEASE_NOTES.md "${PRERELEASE[@]}"
