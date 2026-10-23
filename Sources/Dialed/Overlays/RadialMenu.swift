@@ -179,8 +179,8 @@ struct RadialMenuView: View {
     }
 
     private func offset(for index: Int, of n: Int) -> CGSize {
-        let angle = (Double(index) / Double(n)) * 2 * .pi - .pi / 2
-        return CGSize(width: cos(angle) * ringRadius, height: sin(angle) * ringRadius)
+        let angle: CGFloat = CGFloat(index) / CGFloat(n) * 2 * .pi - .pi / 2
+        return CGSize(width: CoreGraphics.cos(angle) * ringRadius, height: CoreGraphics.sin(angle) * ringRadius)
     }
 
     private func item(_ slot: RadialSlot, highlighted: Bool) -> some View {

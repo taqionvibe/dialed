@@ -223,13 +223,8 @@ struct RadialPreview: View {
             Circle().fill(.black.opacity(0.85))
                 .overlay(Circle().strokeBorder(.white.opacity(0.1)))
             ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                let angle = Double(index) / Double(max(1, items.count)) * 2 * .pi - .pi / 2
-                Image(systemName: app.settings.symbol(for: item))
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(index == 0 ? .white : .white.opacity(0.75))
-                    .frame(width: 30, height: 30)
-                    .background(index == 0 ? AnyShapeStyle(Theme.accent.gradient) : AnyShapeStyle(.white.opacity(0.1)), in: Circle())
-                    .offset(x: cos(angle) * 70, y: sin(angle) * 70)
+                previewItem(item, highlighted: index == 0)
+                    .offset(offset(for: index))
             }
             Text(items.first.map { app.settings.label(for: $0) } ?? "")
                 .font(.caption.weight(.semibold)).foregroundStyle(.white)
@@ -240,6 +235,21 @@ struct RadialPreview: View {
         .frame(width: 190, height: 190)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Radial menu preview with \(items.count) items")
+    }
+
+    private func offset(for index: Int) -> CGSize {
+        let angle: CGFloat = CGFloat(index) / CGFloat(max(1, items.count)) * 2 * .pi - .pi / 2
+        return CGSize(width: CoreGraphics.cos(angle) * 70, height: CoreGraphics.sin(angle) * 70)
+    }
+
+    private func previewItem(_ item: RadialItem, highlighted: Bool) -> some View {
+        let fill: AnyShapeStyle = highlighted ? AnyShapeStyle(Theme.accent.gradient) : AnyShapeStyle(Color.white.opacity(0.1))
+        let tint: Color = highlighted ? .white : .white.opacity(0.75)
+        return Image(systemName: app.settings.symbol(for: item))
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(tint)
+            .frame(width: 30, height: 30)
+            .background(fill, in: Circle())
     }
 }
 
