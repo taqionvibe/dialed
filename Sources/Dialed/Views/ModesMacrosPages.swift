@@ -239,7 +239,7 @@ struct AboutPage: View {
         Form {
             Section {
                 HStack(spacing: 16) {
-                    Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 72, height: 72).accessibilityHidden(true)
+                    Image(nsImage: AppIconImage.image).resizable().frame(width: 72, height: 72).accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Dialed").font(.title.weight(.semibold))
                         Text("Version \(Bundle.main.shortVersion)").foregroundStyle(.secondary)

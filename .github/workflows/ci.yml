@@ -38,11 +38,27 @@ jobs:
           test -f build/Dialed.app/Contents/Resources/AppIcon.icns
           /usr/libexec/PlistBuddy -c "Print :LSUIElement" build/Dialed.app/Contents/Info.plist | grep -q true
 
+      - name: Build DMG
+        run: |
+          python3 -m pip install --user --quiet dmgbuild
+          DMGBUILD="$(python3 -m site --user-base)/bin/dmgbuild" scripts/build-dmg.sh
+
+      - name: Verify DMG
+        run: |
+          hdiutil attach -nobrowse -readonly build/Dialed.dmg -mountpoint /tmp/dialed-dmg
+          test -d /tmp/dialed-dmg/Dialed.app
+          test -L /tmp/dialed-dmg/Applications
+          test -f /tmp/dialed-dmg/.DS_Store
+          codesign --verify --strict /tmp/dialed-dmg/Dialed.app
+          hdiutil detach /tmp/dialed-dmg
+
       - name: Upload app
         uses: actions/upload-artifact@v5
         with:
           name: Dialed-app
-          path: build/Dialed.zip
+          path: |
+            build/Dialed.dmg
+            build/Dialed.zip
           if-no-files-found: error
 
       - name: Publish release
@@ -52,6 +68,6 @@ jobs:
         run: |
           PRERELEASE=()
           if [[ "$GITHUB_REF_NAME" == *-* ]]; then PRERELEASE=(--prerelease); fi
-          gh release create "$GITHUB_REF_NAME" build/Dialed.zip \
+          gh release create "$GITHUB_REF_NAME" build/Dialed.dmg build/Dialed.zip \
             --title "Dialed ${GITHUB_REF_NAME#v}" \
             --notes-file docs/RELEASE_NOTES.md "${PRERELEASE[@]}"

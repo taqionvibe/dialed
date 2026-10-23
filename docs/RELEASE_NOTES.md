@@ -2,7 +2,7 @@
 
 Turn the Smart Dial on the CMF Buds Pro 2 case into a Mac controller.
 
-**Install:** download `Dialed.zip`, unzip, move **Dialed.app** to Applications, then right-click → **Open** the first time (the app isn't notarized). Follow the setup window; it covers the Nothing X dial settings and the Accessibility permission.
+**Install:** download **`Dialed.dmg`**, open it and drag **Dialed** to Applications (or use `Dialed.zip`), then right-click → **Open** the first time (the app isn't notarized). Follow the setup window; it covers the Nothing X dial settings and the Accessibility permission.
 
 ### Highlights
 - 11 built-in modes: Volume, Scroll (smooth, with fast-spin boost), Media, Video Seek, Brightness, Zoom, Browser Tabs, Slides, App Switcher, Windows, Undo / Redo

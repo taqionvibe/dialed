@@ -127,7 +127,7 @@ struct OnboardingView: View {
 
     private var welcome: some View {
         VStack(spacing: 22) {
-            Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 110, height: 110)
+            Image(nsImage: AppIconImage.image).resizable().frame(width: 110, height: 110)
                 .accessibilityHidden(true)
             VStack(spacing: 8) {
                 Text("Welcome to Dialed").font(.system(size: 30, weight: .bold))
