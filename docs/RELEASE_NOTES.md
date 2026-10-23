@@ -1,23 +1,19 @@
-## Dialed 1.0
+## Dialed 1.0.1
 
-Turn the Smart Dial on the CMF Buds Pro 2 case into a Mac controller.
+**Install:** download **`Dialed.dmg`**, open it and drag **Dialed** to Applications (or use `Dialed.zip`). The first time, right-click Dialed → **Open** (the app isn't notarized). The setup window covers the Nothing X dial settings and the Accessibility permission.
 
-**Install:** download **`Dialed.dmg`**, open it and drag **Dialed** to Applications (or use `Dialed.zip`), then right-click → **Open** the first time (the app isn't notarized). Follow the setup window; it covers the Nothing X dial settings and the Accessibility permission.
+### What's new
+- **DMG installer** with a drag-to-Applications window and first-launch hint.
+- **"Made with ♥ by Taqi Saeed"** credit, linking to [taqisaeed.com](https://taqisaeed.com), in the About page, menu bar panel and welcome screen.
+- Redesigned README.
 
-### Highlights
-- 11 built-in modes: Volume, Scroll (smooth, with fast-spin boost), Media, Video Seek, Brightness, Zoom, Browser Tabs, Slides, App Switcher, Windows, Undo / Redo
-- Radial menu (triple press) with click-to-choose, click-away and Esc
-- Per-app profiles with automatic switching, editable radial items, remappable presses
-- Custom modes, macros, Apple Shortcuts, keyboard shortcuts, open apps/links, type text
-- On-screen feedback, live diagnostics, settings import/export
-- Handles sleep/wake, buds going into the case, reconnects, accidental turns and fast spins
-- Turning Dialed off gives the buds back to macOS completely
-
-### Tested on real hardware
-macOS 27.0.1 with CMF Buds Pro 2: turns, single/double/triple presses, volume restore, radial menu, Volume/Scroll/Media modes, play/pause and next track forwarded to YouTube Music, keeping the presses while music plays, case in/out and sleep/wake. Full report: `docs/HARDWARE-TESTING.md`.
+### Tested with real CMF Buds Pro 2 (macOS 27)
+Turns, single / double / triple presses, the radial menu, all 11 built-in modes, macros and Apple Shortcuts, play-pause and next track for YouTube Music while it plays, case in/out, sleep/wake and the off switch. Full report: `docs/HARDWARE-TESTING.md`.
 
 ### Known limitations
 - Press-and-hold never reaches macOS.
 - macOS shows its own volume indicator on each click (no public API hides it).
 - Dialed appears under Now Playing while it's on (macOS only sends the buds' presses to that app).
 - Unsigned build: macOS asks for Accessibility again after updating.
+
+Made with ❤️ by [Taqi Saeed](https://taqisaeed.com)
