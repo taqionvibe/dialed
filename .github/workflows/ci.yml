@@ -40,8 +40,9 @@ jobs:
 
       - name: Build DMG
         run: |
-          python3 -m pip install --user --quiet dmgbuild
-          DMGBUILD="$(python3 -m site --user-base)/bin/dmgbuild" scripts/build-dmg.sh
+          python3 -m venv "$RUNNER_TEMP/dmgenv"
+          "$RUNNER_TEMP/dmgenv/bin/pip" install --quiet dmgbuild
+          DMGBUILD="$RUNNER_TEMP/dmgenv/bin/dmgbuild" scripts/build-dmg.sh
 
       - name: Verify DMG
         run: |
