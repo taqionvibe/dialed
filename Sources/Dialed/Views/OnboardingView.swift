@@ -140,6 +140,7 @@ struct OnboardingView: View {
                 feature("person.crop.rectangle.stack", "Per app", "Profiles switch automatically with the front app")
             }
             .padding(.top, 8)
+            MadeWithLove()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

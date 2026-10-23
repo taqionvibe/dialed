@@ -22,6 +22,8 @@
   Profiles follow the app you're using. Native, private, and tested with real buds.
 </p>
 
+<p align="center"><sub>Made with ❤️ by <a href="https://taqisaeed.com">Taqi Saeed</a></sub></p>
+
 <br>
 
 ## ✨ What it does
@@ -145,9 +147,9 @@
 
 <br>
 
-Verified on a MacBook Pro running macOS 27.0.1 with real CMF Buds Pro 2: turns, single / double / triple presses, volume restore, the radial menu, Volume / Scroll / Media / Brightness / Zoom / Browser Tabs modes, play-pause and next track forwarded to YouTube Music, keeping the presses while music plays, the buds going in and out of the case, sleep / wake, and the off switch.
+Verified on a MacBook Pro running macOS 27.0.1 with real CMF Buds Pro 2: turns, single / double / triple presses, volume restore, the radial menu, all built-in modes (Volume, Scroll, Media, Video Seek, Brightness, Zoom, Browser Tabs, Slides, App Switcher, Windows, Undo / Redo), macros and Apple Shortcuts, play-pause and next track forwarded to YouTube Music, keeping the presses while music plays, the buds going in and out of the case, sleep / wake, and the off switch.
 
-Full report, including what is **not** hardware-tested yet: [docs/HARDWARE-TESTING.md](docs/HARDWARE-TESTING.md).
+Full report, including what is still untested: [docs/HARDWARE-TESTING.md](docs/HARDWARE-TESTING.md).
 
 </details>
 
@@ -198,3 +200,10 @@ CI runs the tests and builds a universal app and DMG on every push and pull requ
 ## 🙏 Credits
 
 Dial decoding builds on the research in [Orbit](https://github.com/harsha20599/orbit) by harsha20599 (MIT) — see [LICENSE](LICENSE). Dialed is not affiliated with or endorsed by Nothing or CMF.
+
+<br>
+
+<p align="center">
+  Made with ❤️ by <a href="https://taqisaeed.com"><b>Taqi Saeed</b></a><br>
+  <a href="https://taqisaeed.com">taqisaeed.com</a>
+</p>

@@ -22,6 +22,9 @@ struct MenuBarView: View {
             .frame(height: Self.bodyHeight, alignment: .top)
             Divider()
             footer
+            MadeWithLove(font: .caption2)
+                .frame(maxWidth: .infinity)
+                .padding(.top, -6)
         }
         .padding(16)
         .frame(width: 340)

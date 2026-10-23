@@ -42,6 +42,7 @@ Two kinds of evidence are used:
 | Sleep / wake → input paused, buds re-attached, presses work after wake | ✅ (from the log of a real sleep/wake cycle) |
 | Brightness, Zoom (Chrome), Browser Tabs (Chrome): on-screen effect confirmed by the tester | ✅ |
 | Undo / Redo, Video Seek: chosen from the radial menu and turned | ✅ mode switch and clicks verified in the log; on-screen effect not separately confirmed |
+| App Switcher, Windows, Slides, macros, Apple Shortcuts actions | ✅ checked by the owner on their Mac with the buds (reported, not captured in a log) |
 | Turning Dialed **off**: buds change volume and control music normally; turning it back on | ✅ |
 | Menu bar panel: on, off and setup states keep a stable size (macOS 27 MenuBarExtra fix) | ✅ |
 | Accessibility permission flow, menu bar status | ✅ |
@@ -63,9 +64,8 @@ Two kinds of evidence are used:
 ## Not tested on hardware
 
 These are built and unit-tested where possible, but were not exercised with the buds:
-App Switcher, Windows, Slides (Keynote/PowerPoint), custom modes, macros, Apple Shortcuts actions,
-automatic profile switching, Spotify/Music AppleScript forwarding, Launch at Login, settings
-import/export in the UI (the format is unit-tested), external displays for Brightness.
+custom modes, automatic profile switching, Spotify/Music AppleScript forwarding, Launch at Login,
+settings import/export in the UI (the format is unit-tested), external displays for Brightness.
 
 ## Known macOS limitations
 
