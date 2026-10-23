@@ -21,7 +21,7 @@ Two kinds of evidence are used:
 | Single press | AVRCP Play or Pause (the buds alternate) → `playCommand` / `pauseCommand` | ✅ Verified |
 | Double press | AVRCP Next Track → `nextTrackCommand` | ✅ Verified |
 | Triple press | AVRCP Previous Track → `previousTrackCommand`, **only** when Nothing X sets Triple to "Previous track". Set to "Low lag mode" or "No action", nothing reaches the Mac (bluetoothd logs nothing). | ✅ Verified |
-| Press and hold | Nothing. `bluetoothd` logs no AVRCP or HFP event; no CoreAudio side effect. | ❌ **Unsupported on macOS** |
+| Press and hold | Nothing. `bluetoothd` logs no AVRCP or HFP event; no CoreAudio side effect. Re-checked with Nothing X set to noise cancellation on hold (3 holds) and with press-then-hold (dial lock): both act inside the buds, nothing reaches the Mac. | ❌ **Unsupported on macOS** |
 | Restoring the volume | Writing the level back after each click is accepted every time (20/20 clicks), takes effect in ~30 ms, and the next click is reported relative to the restored level. | ✅ Verified |
 | Reconnect | The buds get a new CoreAudio device ID every time they reconnect. | ✅ Verified, handled |
 
@@ -45,6 +45,9 @@ Two kinds of evidence are used:
 | App Switcher, Windows, Slides, macros, Apple Shortcuts actions | ✅ checked by the owner on their Mac with the buds (reported, not captured in a log) |
 | Turning Dialed **off**: buds change volume and control music normally; turning it back on | ✅ |
 | Menu bar panel: on, off and setup states keep a stable size (macOS 27 MenuBarExtra fix) | ✅ |
+| Presses reach Dialed while the music app is **paused** (firm re-claim every 4 s) | ✅ (1.1.0) |
+| Idle CPU after the redraw fix: ~1% (was ~23%) | ✅ (1.1.0) |
+| **Auto-update (Sparkle)**: build 100 found build 200 on a local signed feed, downloaded the DMG, verified the EdDSA signature, installed and relaunched | ✅ (1.1.0) |
 | Accessibility permission flow, menu bar status | ✅ |
 
 ### What changed because of hardware testing

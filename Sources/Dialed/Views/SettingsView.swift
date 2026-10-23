@@ -123,6 +123,7 @@ struct GeneralPage: View {
             } footer: {
                 FormNote("Dialed listens to the Bluetooth audio device whose name contains this text.")
             }
+            UpdatesSection()
             Section("Settings file") {
                 HStack {
                     Button("Export…", action: exportSettings)
@@ -256,7 +257,8 @@ struct HardwareFactsView: View {
             fact("checkmark.circle.fill", .green, "Turn", "Arrives as a volume step (16 per full range). Dialed restores your volume after each click.")
             fact("checkmark.circle.fill", .green, "Single / double press", "Arrive as play-pause / next track.")
             fact("checkmark.circle.fill", .green, "Triple press", "Arrives as previous track — only if Nothing X sets Triple to “Previous track”. Opens the radial menu by default.")
-            fact("xmark.circle.fill", .red, "Press and hold", "Never reaches macOS. It can’t be used on a Mac.")
+            fact("xmark.circle.fill", .red, "Hold", "Handled inside the buds (hold ~3 s = noise cancellation, press then hold = lock turning) and never reaches macOS.")
+            fact("lock.circle.fill", .orange, "Turning locked", "If turning does nothing, the dial may be locked — press once, then hold, to unlock it.")
             fact("exclamationmark.circle.fill", .orange, "Fast spins", "The buds report about one click every half second while spinning; Dialed boosts fast spins to make up for dropped clicks.")
         }
         .font(.callout)
@@ -266,6 +268,39 @@ struct HardwareFactsView: View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Image(systemName: symbol).foregroundStyle(color).accessibilityHidden(true)
             Text("**\(title)** — \(text)").fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+/// Settings → General → Updates.
+struct UpdatesSection: View {
+    @ObservedObject private var updater = UpdaterModel.shared
+
+    var body: some View {
+        Section {
+            if updater.isAvailable {
+                Toggle("Check for updates automatically", isOn: Binding(
+                    get: { updater.automaticallyChecks }, set: { updater.automaticallyChecks = $0 }))
+                Toggle("Download and install updates automatically", isOn: Binding(
+                    get: { updater.automaticallyInstalls }, set: { updater.automaticallyInstalls = $0 }))
+                    .disabled(!updater.automaticallyChecks)
+                LabeledContent("Last checked") {
+                    if let date = updater.lastCheck {
+                        Text(date, format: .relative(presentation: .named)).foregroundStyle(.secondary)
+                    } else {
+                        Text("Never").foregroundStyle(.secondary)
+                    }
+                }
+                Button("Check for Updates…") { updater.checkForUpdates() }
+                    .disabled(!updater.canCheck)
+            } else {
+                Text("This is a development build, so automatic updates are off. Release builds from GitHub update themselves.")
+                    .font(.callout).foregroundStyle(.secondary)
+            }
+        } header: {
+            Text("Updates")
+        } footer: {
+            FormNote("Updates are signed; Dialed only installs versions published by its developer. Because the app isn’t notarized, macOS may ask for Accessibility again after an update.")
         }
     }
 }
