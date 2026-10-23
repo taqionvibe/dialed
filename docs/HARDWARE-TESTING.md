@@ -40,7 +40,10 @@ Two kinds of evidence are used:
 | Presses keep reaching Dialed **while YouTube Music is playing** (re-claim) | ✅ (after three iterations — see below) |
 | Buds into the case → Dialed releases media controls and leaves Now Playing; out of the case → reconnects on its own | ✅ |
 | Sleep / wake → input paused, buds re-attached, presses work after wake | ✅ (from the log of a real sleep/wake cycle) |
-| Undo / Redo, Browser Tabs, Zoom, Brightness, Video Seek: chosen from the radial menu and turned | ✅ mode switching and click delivery verified in the log; see the PR for which on-screen effects were confirmed |
+| Brightness, Zoom (Chrome), Browser Tabs (Chrome): on-screen effect confirmed by the tester | ✅ |
+| Undo / Redo, Video Seek: chosen from the radial menu and turned | ✅ mode switch and clicks verified in the log; on-screen effect not separately confirmed |
+| Turning Dialed **off**: buds change volume and control music normally; turning it back on | ✅ |
+| Menu bar panel: on, off and setup states keep a stable size (macOS 27 MenuBarExtra fix) | ✅ |
 | Accessibility permission flow, menu bar status | ✅ |
 
 ### What changed because of hardware testing
