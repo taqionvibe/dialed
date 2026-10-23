@@ -17,6 +17,11 @@
 	<key>LSUIElement</key><true/>
 	<key>NSHighResolutionCapable</key><true/>
 	<key>NSSupportsAutomaticTermination</key><false/>
+	<key>SUFeedURL</key><string>https://github.com/taqionvibe/dialed/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key><string>__SPARKLE_PUBLIC_KEY__</string>
+	<key>SUEnableAutomaticChecks</key><true/>
+	<key>SUScheduledCheckInterval</key><integer>86400</integer>
+	<key>SUAllowsAutomaticUpdates</key><true/>
 	<key>NSAppleEventsUsageDescription</key><string>Dialed sends play/pause and track commands from your buds’ dial to Music or Spotify.</string>
 	<key>NSHumanReadableCopyright</key><string>Made with love by Taqi Saeed · taqisaeed.com · © 2026, MIT License. Based on research from Orbit by harsha20599.</string>
 </dict>

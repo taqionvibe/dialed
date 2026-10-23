@@ -62,6 +62,33 @@ jobs:
             build/Dialed.zip
           if-no-files-found: error
 
+      - name: Sign update and write appcast
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          SPARKLE_VERSION: "2.10.0"
+        run: |
+          if [[ -z "$SPARKLE_PRIVATE_KEY" ]]; then
+            echo "::error::SPARKLE_PRIVATE_KEY secret is missing; releases must ship a signed update feed."
+            exit 1
+          fi
+          KEY_IN_APP="$(/usr/libexec/PlistBuddy -c 'Print :SUPublicEDKey' build/Dialed.app/Contents/Info.plist)"
+          if [[ -z "$KEY_IN_APP" || "$KEY_IN_APP" == __* ]]; then
+            echo "::error::Resources/SparklePublicKey.txt is missing; the app couldn't verify updates."
+            exit 1
+          fi
+          curl -fsSL -o "$RUNNER_TEMP/sparkle.tar.xz" \
+            "https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VERSION}/Sparkle-${SPARKLE_VERSION}.tar.xz"
+          mkdir -p "$RUNNER_TEMP/sparkle" && tar -xJf "$RUNNER_TEMP/sparkle.tar.xz" -C "$RUNNER_TEMP/sparkle"
+          umask 077
+          printf '%s' "$SPARKLE_PRIVATE_KEY" > "$RUNNER_TEMP/sparkle.key"
+          SIGNATURE="$("$RUNNER_TEMP/sparkle/bin/sign_update" --ed-key-file "$RUNNER_TEMP/sparkle.key" build/Dialed.dmg)"
+          rm -f "$RUNNER_TEMP/sparkle.key"
+          BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' build/Dialed.app/Contents/Info.plist)"
+          python3 scripts/make-appcast.py --version "$(cat VERSION)" --build "$BUILD" \
+            --tag "$GITHUB_REF_NAME" --signature "$SIGNATURE"
+          xmllint --noout build/appcast.xml
+
       - name: Publish release
         if: startsWith(github.ref, 'refs/tags/v')
         env:
@@ -69,6 +96,6 @@ jobs:
         run: |
           PRERELEASE=()
           if [[ "$GITHUB_REF_NAME" == *-* ]]; then PRERELEASE=(--prerelease); fi
-          gh release create "$GITHUB_REF_NAME" build/Dialed.dmg build/Dialed.zip \
+          gh release create "$GITHUB_REF_NAME" build/Dialed.dmg build/Dialed.zip build/appcast.xml \
             --title "Dialed ${GITHUB_REF_NAME#v}" \
             --notes-file docs/RELEASE_NOTES.md "${PRERELEASE[@]}"
