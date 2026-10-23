@@ -5,22 +5,28 @@ import DialedCore
 @main
 struct DialedApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
-    @ObservedObject private var controller = AppController.shared
-
     var body: some Scene {
         MenuBarExtra {
             MenuBarView()
-                .environmentObject(controller)
+                .environmentObject(AppController.shared)
         } label: {
-            Image(systemName: menuSymbol)
-                .accessibilityLabel("Dialed")
+            MenuBarIcon()
         }
         .menuBarExtraStyle(.window)
     }
+}
 
-    private var menuSymbol: String {
-        guard controller.enabled else { return "dial.low" }
-        return controller.isReady ? "dial.medium.fill" : "dial.medium"
+/// Only the icon symbol is observed here, so the status item redraws only when the
+/// symbol actually changes (redrawing it is expensive).
+final class MenuBarIconModel: ObservableObject {
+    static let shared = MenuBarIconModel()
+    @Published var symbol = "dial.medium"
+}
+
+private struct MenuBarIcon: View {
+    @ObservedObject private var model = MenuBarIconModel.shared
+    var body: some View {
+        Image(systemName: model.symbol).accessibilityLabel("Dialed")
     }
 }
 
@@ -45,6 +51,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(showDock ? .regular : .accessory)
         MainActor.assumeIsolated {
             AppController.shared.start()
+            UpdaterModel.shared.start()
             ScreenshotRenderer.installHook()
         }
     }

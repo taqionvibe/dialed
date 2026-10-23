@@ -79,6 +79,19 @@ final class AppController: ObservableObject {
 
     var isReady: Bool { enabled && buds.isConnected && accessibilityGranted }
 
+    /// Writes a published property only when the value changes. Re-publishing equal
+    /// values redrew the menu bar icon and every open window several times a second.
+    private func publish<T: Equatable>(_ keyPath: ReferenceWritableKeyPath<AppController, T>, _ value: T) {
+        guard self[keyPath: keyPath] != value else { return }
+        self[keyPath: keyPath] = value
+        refreshMenuBarIcon()
+    }
+
+    private func refreshMenuBarIcon() {
+        let symbol = !settings.enabled ? "dial.low" : (isReady ? "dial.medium.fill" : "dial.medium")
+        if MenuBarIconModel.shared.symbol != symbol { MenuBarIconModel.shared.symbol = symbol }
+    }
+
     // MARK: Lifecycle
 
     func start() {
@@ -119,6 +132,7 @@ final class AppController: ObservableObject {
         RunLoop.main.add(t, forMode: .common)
         timer = t
 
+        refreshMenuBarIcon()
         if !settings.onboardingCompleted {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { WindowManager.shared.showOnboarding() }
         }
@@ -138,22 +152,24 @@ final class AppController: ObservableObject {
     private func tick() {
         apply(engine.tick(now: ProcessInfo.processInfo.systemUptime))
         tickCount += 1
+        if tickCount % 40 == 0 { publish(\.launchAtLogin, LoginItem.isEnabled) }
         if tickCount % 4 == 0 {
             let granted = Permissions.accessibilityGranted
             if granted != accessibilityGranted {
-                accessibilityGranted = granted
+                publish(\.accessibilityGranted, granted)
                 diagnostics.log(.system, granted ? "Accessibility permission granted" : "Accessibility permission removed")
                 if granted { monitors.startKeyMonitor(); permissionWarned = false }
             }
-            keepAliveRunning = keepAlive.isRunning
-            launchAtLogin = LoginItem.isEnabled
+            publish(\.keepAliveRunning, keepAlive.isRunning)
         }
-        // A playing music app re-takes "now playing" (and with it the buds' presses)
-        // on every track change. Hardware-verified: one re-claim isn't enough, so keep
-        // re-claiming every 2 s while another app is playing.
-        if tickCount % 8 == 0, settings.enabled, remote.isActive, !remote.isYielding,
+        // A music app re-takes "now playing" (and with it the buds' presses) on every
+        // play/track change, and keeps it while merely paused. Hardware-verified: a soft
+        // re-claim loses in both cases, so always re-claim firmly — every 2 s while
+        // another app is playing, every 4 s otherwise.
+        let interval = processWatcher.othersPlaying ? 8 : 16
+        if tickCount % interval == 0, settings.enabled, remote.isActive, !remote.isYielding,
            ProcessInfo.processInfo.systemUptime > ignorePressesUntil {
-            remote.reassert(firmly: processWatcher.othersPlaying)
+            remote.reassert(firmly: true)
         }
     }
 
@@ -165,7 +181,7 @@ final class AppController: ObservableObject {
             guard let self, self.settings.enabled, self.audio.device != nil, self.remote.isActive, !self.remote.isYielding else { return }
             self.remote.reassert(firmly: true)
             self.keepAlive.kick()
-            self.keepAliveRunning = self.keepAlive.isRunning
+            self.publish(\.keepAliveRunning, self.keepAlive.isRunning)
             self.diagnostics.log(.system, "Took the buds’ presses back from \(app)")
         }
         reclaimWork = work
@@ -198,7 +214,7 @@ final class AppController: ObservableObject {
             listeningLevel = audio.volume
             moveToRestLevelIfNeeded()
         }
-        keepAliveRunning = keepAlive.isRunning
+        publish(\.keepAliveRunning, keepAlive.isRunning)
         if let err = keepAlive.lastError { report("Couldn’t keep the buds’ audio link open: \(err)") }
         diagnostics.log(.system, audio.device == nil ? "Dialed on — waiting for the buds to connect"
                                                      : "Input active — Dialed receives the dial")
@@ -212,7 +228,7 @@ final class AppController: ObservableObject {
         _ = engine.closeMenu(selected: nil)
         remote.deactivate()
         keepAlive.stop()
-        keepAliveRunning = false
+        publish(\.keepAliveRunning, false)
         if let level = listeningLevel, let current = audio.volume, abs(current - level) > 0.001 {
             audio.setVolume(level)
         }
@@ -224,7 +240,8 @@ final class AppController: ObservableObject {
     private func handleDevice(_ device: AudioOutputDevice?) {
         if let device {
             buds = .connected(name: device.name, isDefaultOutput: device.isDefaultOutput)
-            budsVolume = audio.volume
+            refreshMenuBarIcon()
+            publish(\.budsVolume, audio.volume)
             diagnostics.log(.system, "Buds connected: \(device.name) (device \(device.id))")
             decoder.reset(level: audio.volume)
             decoder.settle(until: ProcessInfo.processInfo.systemUptime + 1.5)
@@ -239,7 +256,8 @@ final class AppController: ObservableObject {
         } else {
             let wasConnected = buds.isConnected
             buds = .searching
-            budsVolume = nil
+            refreshMenuBarIcon()
+            publish(\.budsVolume, nil)
             keepAlive.stop()
             // Buds in the case: give media controls back to macOS and leave Now Playing.
             remote.deactivate()
@@ -254,11 +272,11 @@ final class AppController: ObservableObject {
                 }
             }
         }
-        keepAliveRunning = keepAlive.isRunning
+        publish(\.keepAliveRunning, keepAlive.isRunning)
     }
 
     private func handleVolume(_ level: Float, at time: TimeInterval) {
-        budsVolume = level
+        publish(\.budsVolume, level)
         let raw = Int((Double(level) * 127).rounded())
         let result = decoder.ingest(level, at: time)
         switch result {
@@ -332,7 +350,7 @@ final class AppController: ObservableObject {
                 self.keepAlive.start(on: d.id)
                 self.remote.activate()
             }
-            self.keepAliveRunning = self.keepAlive.isRunning
+            self.publish(\.keepAliveRunning, self.keepAlive.isRunning)
         }
     }
 
@@ -357,7 +375,7 @@ final class AppController: ObservableObject {
 
     private func apply(_ effects: [DialEngine.Effect]) {
         for effect in effects { perform(effect) }
-        currentMode = engine.mode
+        publish(\.currentMode, engine.mode)
     }
 
     private func perform(_ effect: DialEngine.Effect) {
@@ -367,7 +385,7 @@ final class AppController: ObservableObject {
         case .modeChanged(let to, let from):
             appSwitcher.commit()
             scroller.stop()
-            currentMode = to
+            publish(\.currentMode, to)
             remote.title = settings.modeName(to)
             if to != from { diagnostics.log(.mode, "Mode: \(settings.modeName(to))") }
             moveToRestLevelIfNeeded()
@@ -523,6 +541,7 @@ final class AppController: ObservableObject {
         s.repair()
         settings = s
         engine.settings = s
+        refreshMenuBarIcon()
         if let p = s.profile(id: activeProfileID) {
             engine.profile = p
         } else {
@@ -572,7 +591,7 @@ final class AppController: ObservableObject {
         } catch {
             lastError = "macOS didn’t allow Launch at Login: \(error.localizedDescription). Move Dialed to Applications and try again."
         }
-        launchAtLogin = LoginItem.isEnabled
+        publish(\.launchAtLogin, LoginItem.isEnabled)
     }
 
     func requestAccessibility() {
