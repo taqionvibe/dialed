@@ -136,7 +136,7 @@ struct OnboardingView: View {
             }
             HStack(spacing: 14) {
                 feature("arrow.clockwise", "Turn", "Volume, scrolling, seeking, tabs, slides and more")
-                feature("circle.circle", "Double-press", "Opens a radial menu to switch modes")
+                feature("circle.circle", "Triple-press", "Opens a radial menu to switch modes")
                 feature("person.crop.rectangle.stack", "Per app", "Profiles switch automatically with the front app")
             }
             .padding(.top, 8)
@@ -162,9 +162,9 @@ struct OnboardingView: View {
                 VStack(spacing: 0) {
                     gestureRow("Single press", "Play / Pause", "Required", .green)
                     Divider()
-                    gestureRow("Double press", "Next track", "Required — opens the radial menu", .green)
+                    gestureRow("Double press", "Next track", "Required — skips to the next song", .green)
                     Divider()
-                    gestureRow("Triple press", "Previous track", "Optional — other choices (e.g. Low lag mode) never reach the Mac", .orange)
+                    gestureRow("Triple press", "Previous track", "Required — opens the radial menu. Low lag mode etc. never reach the Mac", .green)
                     Divider()
                     gestureRow("Press and hold", "Anything", "Not available on macOS", .secondary)
                     Divider()
@@ -261,7 +261,7 @@ struct OnboardingView: View {
 
     private var done: some View {
         VStack(alignment: .leading, spacing: 18) {
-            header("checkmark.seal.fill", "You’re ready", "Dialed lives in the menu bar. Turn to use the current mode, double-press to open the radial menu, triple-press to go back.")
+            header("checkmark.seal.fill", "You’re ready", "Dialed lives in the menu bar. Turn to use the current mode, triple-press to open the radial menu. Single press is the mode’s action, double press skips to the next song.")
             Card {
                 VStack(alignment: .leading, spacing: 12) {
                     Toggle("Launch Dialed at login", isOn: Binding(get: { app.launchAtLogin }, set: { app.setLaunchAtLogin($0) }))

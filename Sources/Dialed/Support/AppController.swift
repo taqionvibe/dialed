@@ -47,6 +47,8 @@ final class AppController: ObservableObject {
     private let scroller = SmoothScroller()
     private let appSwitcher = AppSwitcher()
     private let brightness = BrightnessController()
+    private let processWatcher = AudioProcessWatcher()
+    private var reclaimWork: DispatchWorkItem?
     private var debouncer = PressDebouncer()
 
     /// The listening level the user chose; non-volume modes return the buds here.
@@ -86,9 +88,16 @@ final class AppController: ObservableObject {
 
         audio.onVolume = { [weak self] level, time in self?.handleVolume(level, at: time) }
         audio.onDeviceChange = { [weak self] device in self?.handleDevice(device) }
-        audio.onDefaultOutputChange = { [weak self] in self?.diagnostics.log(.system, "System output device changed") }
+        audio.onDefaultOutputChange = { [weak self] in
+            guard let self else { return }
+            // macOS may ramp the volume while switching outputs; that isn't the dial.
+            self.decoder.settle(until: ProcessInfo.processInfo.systemUptime + 1.5)
+            self.diagnostics.log(.system, "System output device changed")
+        }
         remote.onCommand = { [weak self] command, time in self?.handleRemote(command, at: time) }
         forwarder.onError = { [weak self] message in self?.report(message) }
+        forwarder.onReclaim = { [weak self] in self?.reclaimPresses(from: "the music app", after: 0) }
+        processWatcher.onOtherAppStartedOutput = { [weak self] app in self?.reclaimPresses(from: app, after: 1.0) }
         radial.onMouseChoice = { [weak self] index in
             guard let self else { return }
             if let index { self.apply(self.engine.chooseMenuItem(at: index)) }
@@ -101,6 +110,7 @@ final class AppController: ObservableObject {
 
         monitors.start()
         audio.start()
+        processWatcher.start()
         if settings.enabled { activateInput() }
 
         let t = Timer(timeInterval: 0.25, repeats: true) { [weak self] _ in
@@ -120,6 +130,7 @@ final class AppController: ObservableObject {
         scroller.stop()
         deactivateInput()
         audio.stop()
+        processWatcher.stop()
         monitors.stop()
         saveNow()
     }
@@ -137,12 +148,28 @@ final class AppController: ObservableObject {
             keepAliveRunning = keepAlive.isRunning
             launchAtLogin = LoginItem.isEnabled
         }
-        // Another app that starts playing takes "now playing" (and with it the buds'
-        // presses). Re-claim it every few seconds while Dialed is on.
-        if tickCount % 12 == 0, settings.enabled, remote.isActive, !remote.isYielding,
+        // A playing music app re-takes "now playing" (and with it the buds' presses)
+        // on every track change. Hardware-verified: one re-claim isn't enough, so keep
+        // re-claiming every 2 s while another app is playing.
+        if tickCount % 8 == 0, settings.enabled, remote.isActive, !remote.isYielding,
            ProcessInfo.processInfo.systemUptime > ignorePressesUntil {
-            remote.reassert()
+            remote.reassert(firmly: processWatcher.othersPlaying)
         }
+    }
+
+    /// Another app started playing and (per macOS rules) took the buds' presses.
+    /// Restart the silent stream so Dialed is the latest to start audio again.
+    private func reclaimPresses(from app: String, after delay: TimeInterval) {
+        reclaimWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            guard let self, self.settings.enabled, self.audio.device != nil, self.remote.isActive, !self.remote.isYielding else { return }
+            self.remote.reassert(firmly: true)
+            self.keepAlive.kick()
+            self.keepAliveRunning = self.keepAlive.isRunning
+            self.diagnostics.log(.system, "Took the buds’ presses back from \(app)")
+        }
+        reclaimWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
     }
 
     // MARK: Enable / disable
@@ -165,6 +192,7 @@ final class AppController: ObservableObject {
         if let d = audio.device {
             remote.activate()
             keepAlive.start(on: d.id)
+            remote.reassert(firmly: true)
             decoder.reset(level: audio.volume)
             decoder.settle(until: ProcessInfo.processInfo.systemUptime + 0.8)
             listeningLevel = audio.volume

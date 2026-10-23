@@ -255,7 +255,7 @@ struct HardwareFactsView: View {
         VStack(alignment: .leading, spacing: 6) {
             fact("checkmark.circle.fill", .green, "Turn", "Arrives as a volume step (16 per full range). Dialed restores your volume after each click.")
             fact("checkmark.circle.fill", .green, "Single / double press", "Arrive as play-pause / next track.")
-            fact("checkmark.circle.fill", .green, "Triple press", "Arrives as previous track — only if Nothing X sets Triple to “Previous track”.")
+            fact("checkmark.circle.fill", .green, "Triple press", "Arrives as previous track — only if Nothing X sets Triple to “Previous track”. Opens the radial menu by default.")
             fact("xmark.circle.fill", .red, "Press and hold", "Never reaches macOS. It can’t be used on a Mac.")
             fact("exclamationmark.circle.fill", .orange, "Fast spins", "The buds report about one click every half second while spinning; Dialed boosts fast spins to make up for dropped clicks.")
         }

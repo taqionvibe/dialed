@@ -57,6 +57,15 @@ public final class SilentKeepAlive {
         }
     }
 
+    /// Restart the silent stream so Dialed is again the most recent app to start
+    /// audio — macOS gives the buds' presses to that app.
+    public func kick() {
+        guard isRunning else { return }
+        let dev = targetDevice
+        stop()
+        start(on: dev)
+    }
+
     public func stop() {
         if let configObserver { NotificationCenter.default.removeObserver(configObserver) }
         configObserver = nil
@@ -101,14 +110,23 @@ public final class RemoteCommandReceiver {
     }
 
     /// Claim "now playing" again (after another app played audio).
-    public func reassert() {
+    /// - Parameter firmly: flip paused → playing so macOS re-ranks Dialed as the
+    ///   most recent app to start playback.
+    public func reassert(firmly: Bool = false) {
         let info = MPNowPlayingInfoCenter.default()
         info.nowPlayingInfo = [
-            MPMediaItemPropertyTitle: title,
-            MPMediaItemPropertyArtist: "Dialed · CMF Buds Pro 2 dial",
+            MPMediaItemPropertyTitle: "Dialed",
+            MPMediaItemPropertyArtist: title,
             MPNowPlayingInfoPropertyPlaybackRate: 1.0,
+            MPNowPlayingInfoPropertyIsLiveStream: true,
+            MPNowPlayingInfoPropertyMediaType: MPNowPlayingInfoMediaType.audio.rawValue,
         ]
-        info.playbackState = .playing
+        if firmly {
+            info.playbackState = .paused
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { info.playbackState = .playing }
+        } else {
+            info.playbackState = .playing
+        }
     }
 
     /// Step aside completely so macOS routes media keys to the previous player

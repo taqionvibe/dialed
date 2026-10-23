@@ -21,7 +21,7 @@ final class RadialModel: ObservableObject {
     var onDismiss: (() -> Void)?
 }
 
-/// The radial menu: double-press opens it, turning moves the highlight, a single
+/// The radial menu: a triple press opens it (by default), turning moves the highlight, a single
 /// press chooses. It never takes keyboard focus away from the user's app.
 @MainActor
 final class RadialMenuController {
@@ -215,7 +215,7 @@ struct RadialMenuView: View {
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
             Divider().overlay(.white.opacity(0.2)).frame(width: 60).padding(.vertical, 2)
-            Text("Press to choose · Double-press,\nclick outside or Esc to close")
+            Text("Press to choose\nClick outside or Esc to close")
                 .font(.system(size: 10.5, weight: .medium))
                 .foregroundStyle(.white.opacity(0.5))
                 .multilineTextAlignment(.center)

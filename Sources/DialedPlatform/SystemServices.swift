@@ -91,6 +91,10 @@ public enum ShortcutsRunner {
 public final class MediaForwarder {
     private let receiver: RemoteCommandReceiver
     public var onError: ((String) -> Void)?
+    /// Called once the player has had the key and Dialed should take the buds'
+    /// presses back firmly (restart its silent audio + claim Now Playing).
+    public var onReclaim: (() -> Void)?
+    private var reclaimWork: DispatchWorkItem?
 
     public init(receiver: RemoteCommandReceiver) { self.receiver = receiver }
 
@@ -107,9 +111,18 @@ public final class MediaForwarder {
             case .previousTrack: verb = "previous track"
             }
             runScript("tell application \"\(player)\" to \(verb)")
+            scheduleReclaim(after: 1.2)
             return
         }
         handOver(command)
+    }
+
+    /// Debounced so a fast spin in Media mode reclaims once, after the last track change.
+    private func scheduleReclaim(after seconds: TimeInterval) {
+        reclaimWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in self?.onReclaim?() }
+        reclaimWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + seconds, execute: work)
     }
 
     /// Spotify or Music if running and playing (or the only one running).
@@ -149,9 +162,9 @@ public final class MediaForwarder {
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
                 self?.receiver.resume()
-                // The player that just resumed claims "now playing" too; claim it back
-                // quickly so the next press reaches Dialed.
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { self?.receiver.reassert() }
+                // A player that starts (or changes) a track takes "now playing" and with
+                // it the buds' presses; take them back once it has settled.
+                self?.scheduleReclaim(after: 1.2)
             }
         }
     }

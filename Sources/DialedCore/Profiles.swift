@@ -23,9 +23,11 @@ public struct GestureMap: Codable, Hashable, Sendable {
     public var double: GestureBinding
     public var triple: GestureBinding
 
+    /// Defaults chosen in hardware testing: double press keeps its familiar
+    /// "next track" meaning for your music, triple press opens the radial menu.
     public init(single: GestureBinding = .modeDefault,
-                double: GestureBinding = .openRadialMenu,
-                triple: GestureBinding = .previousMode) {
+                double: GestureBinding = .action(.media(command: .nextTrack)),
+                triple: GestureBinding = .openRadialMenu) {
         self.single = single
         self.double = double
         self.triple = triple

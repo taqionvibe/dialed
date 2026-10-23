@@ -14,16 +14,16 @@ final class DialEngineTests: XCTestCase {
         XCTAssertEqual(e.handle(.turn(steps: 1, at: 0)), [.output(.volumeChanged(steps: 1), mode: e.mode)])
     }
 
-    func testDoublePressOpensMenuOnCurrentMode() {
+    func testTriplePressOpensMenuOnCurrentMode() {
         let e = engine()
-        let effects = e.handle(.press(.double, at: 0))
+        let effects = e.handle(.press(.triple, at: 0))
         guard case .menuOpened(let m) = effects.first else { return XCTFail("\(effects)") }
         XCTAssertEqual(m.highlightedItem?.target, .mode(BuiltinMode.volume.id))
     }
 
     func testMenuTurnWrapsAndSingleSelects() {
         let e = engine()
-        _ = e.handle(.press(.double, at: 0))
+        _ = e.handle(.press(.triple, at: 0))
         _ = e.handle(.turn(steps: -1, at: 1))   // wraps to the last item
         let count = e.settings.defaultProfile.radialItems.count
         XCTAssertEqual(e.menu?.highlighted, count - 1)
@@ -36,7 +36,7 @@ final class DialEngineTests: XCTestCase {
 
     func testMenuTurnsAreNeverAccelerated() {
         let e = engine()
-        _ = e.handle(.press(.double, at: 0))
+        _ = e.handle(.press(.triple, at: 0))
         _ = e.handle(.turn(steps: 1, at: 0.1))
         _ = e.handle(.turn(steps: 1, at: 0.2))
         XCTAssertEqual(e.menu?.highlighted, 2)
@@ -44,15 +44,17 @@ final class DialEngineTests: XCTestCase {
 
     func testDoubleOrTriplePressClosesMenuWithoutChange() {
         let e = engine()
-        _ = e.handle(.press(.double, at: 0))
+        _ = e.handle(.press(.triple, at: 0))
         _ = e.handle(.turn(steps: 3, at: 1))
         XCTAssertEqual(e.handle(.press(.double, at: 2)), [.menuClosed(selected: nil)])
+        _ = e.handle(.press(.triple, at: 3))
+        XCTAssertEqual(e.handle(.press(.triple, at: 4)), [.menuClosed(selected: nil)])
         XCTAssertEqual(e.mode, BuiltinMode.volume.id)
     }
 
     func testMenuTimeoutSelectsHighlightedMode() {
         let e = engine()
-        _ = e.handle(.press(.double, at: 0))
+        _ = e.handle(.press(.triple, at: 0))
         _ = e.handle(.turn(steps: 1, at: 1))
         XCTAssertEqual(e.tick(now: 2), [])
         _ = e.tick(now: 1 + e.settings.general.radialTimeout)
@@ -63,17 +65,21 @@ final class DialEngineTests: XCTestCase {
         let e = engine { s in
             s.profiles[0].radialItems = [RadialItem(target: .action(.system(command: .lockScreen)))]
         }
-        _ = e.handle(.press(.double, at: 0))
+        _ = e.handle(.press(.triple, at: 0))
         XCTAssertEqual(e.tick(now: 100), [.menuClosed(selected: nil)])
     }
 
-    func testTriplePressGoesBack() {
-        let e = engine()
-        XCTAssertEqual(e.handle(.press(.triple, at: 0)), [.nothingToDo("No previous mode yet")])
+    func testDoublePressSkipsTrackByDefault() {
+        XCTAssertEqual(engine().handle(.press(.double, at: 0)), [.run(.media(command: .nextTrack))])
+    }
+
+    func testPreviousModeBinding() {
+        let e = engine { $0.profiles[0].gestures.double = .previousMode }
+        XCTAssertEqual(e.handle(.press(.double, at: 0)), [.nothingToDo("No previous mode yet")])
         _ = e.switchMode(BuiltinMode.zoom.id)
-        _ = e.handle(.press(.triple, at: 1))
+        _ = e.handle(.press(.double, at: 1))
         XCTAssertEqual(e.mode, BuiltinMode.volume.id)
-        _ = e.handle(.press(.triple, at: 2))
+        _ = e.handle(.press(.double, at: 2))
         XCTAssertEqual(e.mode, BuiltinMode.zoom.id)
     }
 
@@ -89,10 +95,10 @@ final class DialEngineTests: XCTestCase {
     func testCustomGestureBindings() {
         let e = engine { s in
             s.profiles[0].gestures.single = .action(.appleShortcut(name: "Focus"))
-            s.profiles[0].gestures.triple = .action(.switchMode(mode: BuiltinMode.brightness.id))
+            s.profiles[0].gestures.double = .action(.switchMode(mode: BuiltinMode.brightness.id))
         }
         XCTAssertEqual(e.handle(.press(.single, at: 0)), [.run(.appleShortcut(name: "Focus"))])
-        _ = e.handle(.press(.triple, at: 1))
+        _ = e.handle(.press(.double, at: 1))
         XCTAssertEqual(e.mode, BuiltinMode.brightness.id)
     }
 
@@ -163,7 +169,7 @@ final class DialEngineTests: XCTestCase {
 
     func testClickingARadialItemChoosesIt() {
         let e = engine()
-        _ = e.handle(.press(.double, at: 0))
+        _ = e.handle(.press(.triple, at: 0))
         _ = e.chooseMenuItem(at: 5) // Zoom
         XCTAssertEqual(e.mode, BuiltinMode.zoom.id)
         XCTAssertNil(e.menu)
@@ -172,7 +178,7 @@ final class DialEngineTests: XCTestCase {
 
     func testRadialActionItemRuns() {
         let e = engine { s in s.profiles[0].radialItems = [RadialItem(target: .action(.system(command: .missionControl)))] }
-        _ = e.handle(.press(.double, at: 0))
+        _ = e.handle(.press(.triple, at: 0))
         let effects = e.handle(.press(.single, at: 1))
         XCTAssertEqual(effects.last, .run(.system(command: .missionControl)))
     }
