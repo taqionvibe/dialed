@@ -119,6 +119,12 @@ public final class DialEngine {
         return [.menuOpened(m)]
     }
 
+    /// Choose a radial item directly (e.g. clicked with the mouse).
+    public func chooseMenuItem(at index: Int) -> [Effect] {
+        guard let m = menu, m.items.indices.contains(index) else { return [] }
+        return select(m.items[index])
+    }
+
     public func closeMenu(selected: RadialItem?) -> [Effect] {
         guard menu != nil else { return [] }
         menu = nil

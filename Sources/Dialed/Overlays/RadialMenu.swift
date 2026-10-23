@@ -17,6 +17,8 @@ final class RadialModel: ObservableObject {
     @Published var arcPosition: Double = 0
     @Published var visible = false
     @Published var chosen: UUID?
+    var onTapItem: ((Int) -> Void)?
+    var onDismiss: (() -> Void)?
 }
 
 /// The radial menu: double-press opens it, turning moves the highlight, a single
@@ -27,8 +29,37 @@ final class RadialMenuController {
     private let model = RadialModel()
     private lazy var panel = OverlayPanel(size: Self.size) { RadialMenuView(model: model) }
     private var hideWork: DispatchWorkItem?
+    private var monitors: [Any] = []
 
     var isVisible: Bool { model.visible }
+
+    /// Called when the user clicks an item (index) or clicks away / presses Esc (nil).
+    var onMouseChoice: ((Int?) -> Void)? {
+        didSet {
+            model.onTapItem = { [weak self] i in self?.onMouseChoice?(i) }
+            model.onDismiss = { [weak self] in self?.onMouseChoice?(nil) }
+        }
+    }
+
+    private func installDismissMonitors() {
+        removeMonitors()
+        panel.ignoresMouseEvents = false
+        // Clicks anywhere else on screen close the menu (they still reach that app).
+        if let m = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown], handler: { [weak self] _ in
+            MainActor.assumeIsolated { self?.onMouseChoice?(nil) }
+        }) { monitors.append(m) }
+        // Esc closes it too.
+        if let m = NSEvent.addGlobalMonitorForEvents(matching: .keyDown, handler: { [weak self] e in
+            guard e.keyCode == 53 else { return }
+            MainActor.assumeIsolated { self?.onMouseChoice?(nil) }
+        }) { monitors.append(m) }
+    }
+
+    private func removeMonitors() {
+        monitors.forEach { NSEvent.removeMonitor($0) }
+        monitors.removeAll()
+        panel.ignoresMouseEvents = true
+    }
 
     func show(state: DialEngine.MenuState, settings: DialedSettings) {
         hideWork?.cancel()
@@ -51,6 +82,7 @@ final class RadialMenuController {
         model.chosen = nil
         let screen = OverlayPanel.activeScreen.visibleFrame
         panel.present(centeredAt: NSPoint(x: screen.midX, y: screen.midY))
+        installDismissMonitors()
         withAnimation(Theme.spring) { model.visible = true }
     }
 
@@ -67,6 +99,7 @@ final class RadialMenuController {
     }
 
     func hide(selected: RadialItem? = nil) {
+        removeMonitors()
         guard model.visible else { return }
         if let selected { withAnimation(Theme.quick) { model.chosen = selected.id } }
         let delay = selected == nil ? 0 : 0.14
@@ -91,6 +124,10 @@ struct RadialMenuView: View {
 
     var body: some View {
         ZStack {
+            // Clicking the empty area around the dial closes it.
+            Color.clear
+                .contentShape(Rectangle())
+                .onTapGesture { model.onDismiss?() }
             if model.visible {
                 menu
                     .transition(.scale(scale: 0.86).combined(with: .opacity))
@@ -110,6 +147,8 @@ struct RadialMenuView: View {
                 .overlay(Circle().strokeBorder(.white.opacity(0.14), lineWidth: 0.75))
                 .shadow(color: .black.opacity(0.32), radius: 22, y: 8)
                 .frame(width: 360, height: 360)
+                .contentShape(Circle())
+                .onTapGesture {} // clicks on the dial body don't close it
 
             // Inner track + indicator arc: reads like the needle of a dial and glides
             // to the highlighted item.
@@ -126,6 +165,9 @@ struct RadialMenuView: View {
 
             ForEach(Array(model.slots.enumerated()), id: \.element.id) { index, slot in
                 item(slot, highlighted: index == model.highlighted)
+                    .contentShape(Circle())
+                    .onTapGesture { model.onTapItem?(index) }
+                    .help(slot.title)
                     .offset(offset(for: index, of: n))
             }
 
@@ -173,7 +215,7 @@ struct RadialMenuView: View {
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
             Divider().overlay(.white.opacity(0.2)).frame(width: 60).padding(.vertical, 2)
-            Text("Press to choose\nDouble-press to close")
+            Text("Press to choose · Double-press,\nclick outside or Esc to close")
                 .font(.system(size: 10.5, weight: .medium))
                 .foregroundStyle(.white.opacity(0.5))
                 .multilineTextAlignment(.center)

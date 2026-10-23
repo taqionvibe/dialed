@@ -16,7 +16,7 @@ final class OverlayPanel: NSPanel {
         hidesOnDeactivate = false
         isReleasedWhenClosed = false
         animationBehavior = .none
-        let host = NSHostingView(rootView: content())
+        let host = FirstClickHostingView(rootView: content())
         host.frame = NSRect(origin: .zero, size: size)
         contentView = host
     }
@@ -34,4 +34,9 @@ final class OverlayPanel: NSPanel {
         setFrameOrigin(NSPoint(x: point.x - frame.width / 2, y: point.y - frame.height / 2))
         orderFrontRegardless()
     }
+}
+
+/// Lets the first click on a non-activating panel reach SwiftUI (no focus change).
+final class FirstClickHostingView<Content: View>: NSHostingView<Content> {
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 }

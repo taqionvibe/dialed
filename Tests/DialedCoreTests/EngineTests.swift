@@ -161,6 +161,15 @@ final class DialEngineTests: XCTestCase {
         XCTAssertEqual(e.mode, BuiltinMode.volume.id)
     }
 
+    func testClickingARadialItemChoosesIt() {
+        let e = engine()
+        _ = e.handle(.press(.double, at: 0))
+        _ = e.chooseMenuItem(at: 5) // Zoom
+        XCTAssertEqual(e.mode, BuiltinMode.zoom.id)
+        XCTAssertNil(e.menu)
+        XCTAssertEqual(e.chooseMenuItem(at: 0), []) // menu closed: nothing happens
+    }
+
     func testRadialActionItemRuns() {
         let e = engine { s in s.profiles[0].radialItems = [RadialItem(target: .action(.system(command: .missionControl)))] }
         _ = e.handle(.press(.double, at: 0))

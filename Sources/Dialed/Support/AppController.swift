@@ -89,6 +89,11 @@ final class AppController: ObservableObject {
         audio.onDefaultOutputChange = { [weak self] in self?.diagnostics.log(.system, "System output device changed") }
         remote.onCommand = { [weak self] command, time in self?.handleRemote(command, at: time) }
         forwarder.onError = { [weak self] message in self?.report(message) }
+        radial.onMouseChoice = { [weak self] index in
+            guard let self else { return }
+            if let index { self.apply(self.engine.chooseMenuItem(at: index)) }
+            else { self.apply(self.engine.closeMenu(selected: nil)) }
+        }
         monitors.onWillSleep = { [weak self] in self?.handleSleep() }
         monitors.onDidWake = { [weak self] in self?.handleWake() }
         monitors.onFrontmostApp = { [weak self] app in self?.handleFrontmost(app) }
@@ -134,7 +139,8 @@ final class AppController: ObservableObject {
         }
         // Another app that starts playing takes "now playing" (and with it the buds'
         // presses). Re-claim it every few seconds while Dialed is on.
-        if tickCount % 12 == 0, settings.enabled, remote.isActive, ProcessInfo.processInfo.systemUptime > ignorePressesUntil {
+        if tickCount % 12 == 0, settings.enabled, remote.isActive, !remote.isYielding,
+           ProcessInfo.processInfo.systemUptime > ignorePressesUntil {
             remote.reassert()
         }
     }
@@ -413,7 +419,7 @@ final class AppController: ObservableObject {
             EventPoster.key(combo)
         case .media(let command):
             if needsAccessibility() { return }
-            ignorePressesUntil = ProcessInfo.processInfo.systemUptime + 0.8
+            ignorePressesUntil = ProcessInfo.processInfo.systemUptime + 1.0
             forwarder.send(command)
             hud.show(.init(symbol: command.symbol, title: command.title, subtitle: nil), settings: settings)
         case .system(let command):

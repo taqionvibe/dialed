@@ -109,10 +109,22 @@ public final class RemoteCommandReceiver {
         info.playbackState = .playing
     }
 
-    /// Temporarily let another app be "now playing" (used to forward media keys).
+    /// Step aside completely so macOS routes media keys to the previous player
+    /// (hardware-verified: only lowering playbackState still routed keys back to us).
     public func yield() {
-        MPNowPlayingInfoCenter.default().playbackState = .stopped
+        guard isActive else { return }
+        deactivate()
+        isYielding = true
     }
+
+    /// Take the buds' presses back after `yield()`.
+    public func resume() {
+        guard isYielding else { return }
+        isYielding = false
+        activate()
+    }
+
+    public private(set) var isYielding = false
 
     public func deactivate() {
         guard isActive else { return }

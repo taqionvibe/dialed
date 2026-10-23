@@ -141,14 +141,17 @@ public final class MediaForwarder {
     /// previous player (browsers, video apps), then take the dial back.
     private func handOver(_ command: MediaCommand) {
         receiver.yield()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
             switch command {
             case .playPause: EventPoster.systemKey(.play)
             case .nextTrack: EventPoster.systemKey(.next)
             case .previousTrack: EventPoster.systemKey(.previous)
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
-                self?.receiver.reassert()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+                self?.receiver.resume()
+                // The player that just resumed claims "now playing" too; claim it back
+                // quickly so the next press reaches Dialed.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { self?.receiver.reassert() }
             }
         }
     }
