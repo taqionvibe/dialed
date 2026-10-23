@@ -92,3 +92,24 @@ enum AppIconImage {
         return NSImage(contentsOf: local) ?? NSApp.applicationIconImage
     }
 }
+
+/// "Made with ♥ by Taqi Saeed" with a link to taqisaeed.com.
+struct MadeWithLove: View {
+    static let website = URL(string: "https://taqisaeed.com")!
+    var font: Font = .caption
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Text("Made with")
+            Image(systemName: "heart.fill").foregroundStyle(Theme.accent).accessibilityLabel("love")
+            Text("by")
+            Link("Taqi Saeed", destination: Self.website)
+                .fontWeight(.semibold)
+                .foregroundStyle(Theme.accent)
+                .help("Open taqisaeed.com")
+        }
+        .font(font)
+        .foregroundStyle(.secondary)
+        .accessibilityElement(children: .combine)
+    }
+}

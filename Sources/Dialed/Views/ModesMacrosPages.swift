@@ -244,6 +244,7 @@ struct AboutPage: View {
                         Text("Dialed").font(.title.weight(.semibold))
                         Text("Version \(Bundle.main.shortVersion)").foregroundStyle(.secondary)
                         Text("The CMF Buds Pro 2 Smart Dial, as a Mac controller.").foregroundStyle(.secondary)
+                        MadeWithLove(font: .callout).padding(.top, 2)
                     }
                 }
                 .padding(.vertical, 6)
@@ -259,6 +260,7 @@ struct AboutPage: View {
                 Text("Dial decoding is based on research from [Orbit](https://github.com/harsha20599/orbit) by harsha20599 (MIT License). Dialed is not affiliated with or endorsed by Nothing or CMF.")
                     .fixedSize(horizontal: false, vertical: true)
                 Link("Dialed on GitHub", destination: URL(string: "https://github.com/taqionvibe/dialed")!)
+                Link("taqisaeed.com", destination: MadeWithLove.website)
                 Button("Open Diagnostics") { WindowManager.shared.showDiagnostics() }
             }
         }
