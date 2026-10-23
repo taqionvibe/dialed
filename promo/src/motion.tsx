@@ -7,19 +7,24 @@ import {C, font} from './theme';
 // ───────────── The case (3D model drawn from CMF's product photos) ─────────────
 
 /** Case seen from above at a slight lean, dial on the right; the dial turns by `rotation`. */
-export const RealCaseTop: React.FC<{width: number; rotation: number; clicks?: number[]; glow?: number; tilt?: number; color?: CaseColor}> = ({
+export const RealCaseTop: React.FC<{width: number; rotation: number; clicks?: number[]; glow?: number; tilt?: number; color?: CaseColor; arrows?: number; float?: boolean}> = ({
   width,
   rotation,
   clicks = [],
   glow = 1,
   tilt = 30,
   color,
+  arrows = 0,
+  float = true,
 }) => {
+  const f = useCurrentFrame();
+  const bob = float ? Math.sin(f / 14) * width * 0.015 : 0;
+  const sway = float ? Math.sin(f / 23) * 4 : 0;
   const S = width * 0.7;
   return (
     <div style={{width, height: width * 0.92, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-      <div style={{transform: `translateX(${-width * 0.04}px)`}}>
-        <CaseModel size={S} dial={rotation} clicks={clicks} glow={glow} tiltX={tilt} angle={45} color={color} />
+      <div style={{transform: `translateX(${-width * 0.04}px) translateY(${bob}px)`}}>
+        <CaseModel size={S} dial={rotation} clicks={clicks} glow={glow} tiltX={tilt} angle={45 + sway} color={color} arrows={arrows} />
       </div>
     </div>
   );
@@ -30,7 +35,7 @@ export const RealCaseSide: React.FC<{width: number; tiltY?: number; tiltX?: numb
   const S = width * 0.6;
   return (
     <div style={{width, height: width * 0.7, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-      <CaseModel size={S} dial={dial} tiltX={60 + tiltX * 0.5} angle={45 + tiltY} glow={0.6} />
+      <CaseModel size={S} dial={dial} tiltX={60 + tiltX * 0.5} angle={45 + tiltY} glow={0.6} arrows={0} />
     </div>
   );
 };

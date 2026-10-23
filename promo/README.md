@@ -8,9 +8,9 @@ Cuts land on the beat of the music track, with synthesized sound effects on top.
 
 | Composition | Length | What it shows |
 |---|---|---|
-| `Hero-en` / `Hero-ur` | 25.7 s | Owner hook → drop + logo → five-mode montage → radial menu → features → end card |
-| `Radial-en` / `Radial-ur` | 12.4 s | Owner hook → triple-press → turn to pick → press to choose → the dial scrolls |
-| `Profiles-en` / `Profiles-ur` | 12.4 s | Owner hook → Keynote → Slides, Safari → Scroll, QuickTime → Video Seek |
+| `Hero-en` / `Hero-ur` | 30.6 s | Owner hook → drop + logo → five-mode montage → radial menu → features → end card |
+| `Radial-en` / `Radial-ur` | 12.6 s | Owner hook → triple-press → turn to pick → press to choose → the dial scrolls |
+| `Profiles-en` / `Profiles-ur` | 12.6 s | Owner hook → Keynote → Slides, Safari → Scroll, QuickTime → Video Seek |
 
 ```bash
 npm install
@@ -19,7 +19,8 @@ npm run render:all      # renders all six MP4s into out/
 ```
 
 - Text for both languages lives in `src/copy2.ts`; scenes and beat timing in `src/reels2.tsx`; reusable motion
-  pieces (camera punch, slam text, whip, MacBook) in `src/motion.tsx`. The `CaseTest` composition shows the case model
+  pieces (camera punch, whip, MacBook) in `src/motion.tsx`; kinetic text with marker swipes, sub-lines, embers,
+  light rays, click pop-labels, 3D flip-ins and the counter in `src/fx.tsx`. The `CaseTest` composition shows the case model
   in a few poses and colours.
 - `scripts/symbols.swift` renders the SF Symbols used for icons, `scripts/sfx.py` synthesizes the sound
   effects, `scripts/sheet.sh` makes a contact sheet of frames for review.

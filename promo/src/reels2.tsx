@@ -3,8 +3,9 @@ import {AbsoluteFill, Audio, interpolate, Sequence, spring, staticFile, useCurre
 import {AppIcon, Background, Chip, HUD, RadialMenu} from './components';
 import {Lang} from './copy';
 import {copy2} from './copy2';
+import {ClickPops, Counter, FlipIn, Particles, Rays, Sub, Words} from './fx';
 import {ScreenKind} from './MacScreen';
-import {beatGrid, Camera, Eyebrow, Flash, MacBook, RealCaseSide, RealCaseTop, Ring, Slam, Whip} from './motion';
+import {beatGrid, Camera, Eyebrow, Flash, MacBook, RealCaseSide, RealCaseTop, Ring, Whip} from './motion';
 import {C, font, SAFE} from './theme';
 
 // Music: "Uplifting Bass" by Lily J (Mixkit Stock Music Free License).
@@ -12,40 +13,65 @@ import {C, font, SAFE} from './theme';
 const DROP_IN_TRACK = 14.38;
 const BEAT = 27.7; // frames per kick at 30 fps
 const HALF = BEAT / 2;
+const clamp = {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'} as const;
 
 /** Spring that starts at frame `at` (plain function, safe inside conditionals). */
 const sp = (f: number, at: number, damping = 14) => spring({frame: f - at, fps: 30, config: {damping}});
 
-const Music: React.FC<{dropAt: number; total: number}> = ({dropAt, total}) => {
-  const startFrom = Math.round((DROP_IN_TRACK * 30) - dropAt);
-  return (
-    <Audio
-      src={staticFile('music/uplifting-bass.mp3')}
-      startFrom={startFrom}
-      volume={(f) => interpolate(f, [0, 8, total - 40, total - 2], [0, 0.85, 0.85, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'})}
-    />
-  );
-};
+const Music: React.FC<{dropAt: number; total: number}> = ({dropAt, total}) => (
+  <Audio
+    src={staticFile('music/uplifting-bass.mp3')}
+    startFrom={Math.round(DROP_IN_TRACK * 30 - dropAt)}
+    volume={(f) => interpolate(f, [0, 8, total - 40, total - 2], [0, 0.85, 0.85, 0], clamp)}
+  />
+);
 
-const Sfx: React.FC<{at: number; name: 'click' | 'tick' | 'whoosh' | 'pop' | 'boom'; volume?: number}> = ({at, name, volume = 0.5}) => (
+type SfxName = 'click' | 'tick' | 'whoosh' | 'pop' | 'boom';
+const Sfx: React.FC<{at: number; name: SfxName; volume?: number}> = ({at, name, volume = 0.5}) => (
   <Sequence from={Math.round(at)} durationInFrames={30} layout="none">
     <Audio src={staticFile(`sfx/${name}.wav`)} volume={volume} />
   </Sequence>
 );
+const SfxList: React.FC<{ats: number[]; name: SfxName; volume?: number}> = ({ats, name, volume}) => (
+  <>
+    {ats.map((a) => (
+      <Sfx key={`${name}${a}`} at={a} name={name} volume={volume} />
+    ))}
+  </>
+);
 
-const Top: React.FC<{children: React.ReactNode; y?: number}> = ({children, y = SAFE.top + 20}) => (
-  <div style={{position: 'absolute', left: SAFE.side, right: SAFE.side, top: y, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 26}}>{children}</div>
+const Top: React.FC<{children: React.ReactNode; y?: number}> = ({children, y = SAFE.top + 10}) => (
+  <div style={{position: 'absolute', left: SAFE.side - 30, right: SAFE.side - 30, top: y, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 22}}>{children}</div>
 );
 const Center: React.FC<{children: React.ReactNode; y?: number}> = ({children, y = 0}) => (
   <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', transform: `translateY(${y}px)`}}>{children}</AbsoluteFill>
 );
+const Bottom: React.FC<{children: React.ReactNode; bottom: number}> = ({children, bottom}) => (
+  <div style={{position: 'absolute', left: 0, right: 0, bottom, display: 'flex', justifyContent: 'center'}}>{children}</div>
+);
 const show = (f: number, a: number, b: number) => f >= a && f < b;
-const fade = (f: number, a: number, b: number) =>
-  Math.min(interpolate(f, [a, a + 6], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'}), interpolate(f, [b - 6, b], [1, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'}));
 
 /** Smooth count of clicks so far (each click eases in over ~6 frames). */
-const clicksSoFar = (f: number, ats: number[]) =>
-  ats.reduce((s, a) => s + interpolate(f, [a, a + 6], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'}), 0);
+const clicksSoFar = (f: number, ats: number[]) => ats.reduce((s, a) => s + interpolate(f, [a, a + 6], [0, 1], clamp), 0);
+const clicksAt = (start: number, n: number, gap = HALF) => Array.from({length: n}, (_, i) => Math.round(start + i * gap));
+
+/** Camera + background glow + drifting embers. */
+const Scene: React.FC<{children: React.ReactNode; beats?: number[]; from?: number; push?: number; shake?: number; glowX?: number; glowY?: number; intensity?: number}> = ({
+  children,
+  beats = [],
+  from = 0,
+  push = 0.04,
+  shake = 0,
+  glowX,
+  glowY,
+  intensity = 1.2,
+}) => (
+  <Camera beats={beats} push={push} from={from} shake={shake}>
+    <Background glowX={glowX} glowY={glowY} intensity={intensity} />
+    <Particles beats={beats} intensity={Math.min(1, intensity * 0.8)} />
+    {children}
+  </Camera>
+);
 
 const RADIAL = [
   {symbol: 'speaker.wave.2.fill', label: 'Volume', hint: 'Turn'},
@@ -63,171 +89,240 @@ const RADIAL = [
 const End: React.FC<{lang: Lang; at: number; beats: number[]}> = ({lang, at, beats}) => {
   const f = useCurrentFrame();
   const t = copy2[lang];
-  const icon = sp(f, at, 10);
-  const name = sp(f, at + 6);
-  const cta = sp(f, at + 14);
-  const made = sp(f, at + 24);
+  const icon = sp(f, at, 9);
+  const cta = sp(f, at + 16, 10);
+  const made = sp(f, at + 26);
+  const shine = interpolate(f, [at + 20, at + 40], [-30, 130], clamp);
   return (
     <AbsoluteFill>
-      <Camera beats={beats} push={0.04} from={at}>
-        <Background glowY={0.42} intensity={1.3} />
-        <Top y={SAFE.top - 10}>
+      <Scene beats={beats} from={at} glowY={0.42} intensity={1.3}>
+        <Top y={SAFE.top - 20}>
           <Eyebrow text={t.only} at={at + 2} />
         </Top>
-        <Center y={-40}>
-          <AppIcon size={290} style={{transform: `scale(${0.4 + 0.6 * icon}) rotate(${(1 - icon) * -90}deg)`, opacity: icon}} />
-          <div style={{fontFamily: font, fontWeight: 900, fontSize: 160, color: 'white', letterSpacing: -7, marginTop: 14, opacity: name, transform: `translateY(${(1 - name) * 50}px)`}}>
-            Dialed
+        <Center y={-50}>
+          <div style={{position: 'relative'}}>
+            <Ring at={at + 2} x={145} y={145} size={300} length={20} width={10} />
+            <AppIcon size={290} style={{transform: `scale(${0.3 + 0.7 * icon}) rotate(${(1 - icon) * -200}deg)`, opacity: Math.min(1, icon * 2)}} />
           </div>
-          <div style={{marginTop: 24, opacity: cta, transform: `scale(${0.8 + 0.2 * cta})`}}>
-            <Chip label={t.cta} appear={1} hot size={50} />
+          <div style={{marginTop: 10}}>
+            <Words text="Dialed" at={at + 6} size={160} />
           </div>
-          <div style={{fontFamily: font, fontSize: 34, fontWeight: 600, color: C.dim, marginTop: 24, opacity: cta}}>
-            {t.ctaSub} · github.com/taqionvibe/dialed
+          <div style={{marginTop: 20, transform: `scale(${0.5 + 0.5 * cta})`, opacity: Math.min(1, cta * 2), position: 'relative', overflow: 'hidden', borderRadius: 999}}>
+            <Chip label={t.cta} appear={1} hot size={52} />
+            <div style={{position: 'absolute', top: 0, bottom: 0, left: `${shine}%`, width: '22%', background: 'linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.6), rgba(255,255,255,0))', transform: 'skewX(-20deg)'}} />
+          </div>
+          <div style={{marginTop: 26}}>
+            <Sub text={`${t.ctaSub} · github.com/taqionvibe/dialed`} at={at + 22} size={36} />
           </div>
         </Center>
-        <div style={{position: 'absolute', left: 0, right: 0, bottom: SAFE.bottom + 10, textAlign: 'center', fontFamily: font, fontSize: 32, fontWeight: 600, color: C.faint, opacity: made}}>
-          Made with <span style={{color: C.accent}}>♥</span> by <span style={{color: 'white'}}>Taqi Saeed</span>
+        <div style={{position: 'absolute', left: 0, right: 0, bottom: SAFE.bottom + 10, textAlign: 'center', fontFamily: font, fontSize: 32, fontWeight: 600, color: C.faint, opacity: made, transform: `translateY(${(1 - made) * 20}px)`}}>
+          Made with <span style={{color: C.accent, display: 'inline-block', transform: `scale(${1 + 0.25 * Math.max(0, Math.sin(f / 4))})`}}>♥</span> by <span style={{color: 'white'}}>Taqi Saeed</span>
         </div>
-      </Camera>
+      </Scene>
     </AbsoluteFill>
   );
 };
 
-// ═══════════════════════════ HERO v2 (~25 s) ═══════════════════════════
+const LogoBlock: React.FC<{at: number; tagline: string}> = ({at, tagline}) => {
+  const f = useCurrentFrame();
+  const p = sp(f, at, 9);
+  return (
+    <>
+      <AppIcon size={300} style={{transform: `scale(${0.2 + 0.8 * p}) rotate(${(1 - p) * -240}deg)`, opacity: Math.min(1, p * 2)}} />
+      <div style={{marginTop: 6}}>
+        <Words text="Dialed" at={at + 5} size={170} stagger={0} />
+      </div>
+      <div style={{marginTop: 14}}>
+        <Sub text={tagline} at={at + 14} size={44} />
+      </div>
+    </>
+  );
+};
 
-const DROP = 210;
-const MONTAGE_AT = 328;
-const SEG = Math.round(BEAT * 1.5); // 42
-const KINDS: {kind: ScreenKind; symbol: string; hud: string; level?: boolean}[] = [
-  {kind: 'scroll', symbol: 'arrow.up.and.down', hud: 'Scroll'},
-  {kind: 'slides', symbol: 'play.rectangle.fill', hud: 'Slides'},
-  {kind: 'video', symbol: 'film', hud: 'Video Seek'},
-  {kind: 'brightness', symbol: 'sun.max.fill', hud: 'Brightness', level: true},
-  {kind: 'volume', symbol: 'speaker.wave.2.fill', hud: 'Volume', level: true},
+/** Bottom-of-screen case that reacts to clicks, with a popping label per click. */
+const ReactiveCase: React.FC<{clicks: number[]; width: number; bottom: number; label?: string; labels?: string[]; symbol?: string; baseRot?: number; arrows?: number}> = ({
+  clicks,
+  width,
+  bottom,
+  label,
+  labels,
+  symbol,
+  baseRot = 0,
+  arrows = 0.9,
+}) => {
+  const f = useCurrentFrame();
+  return (
+    <Bottom bottom={bottom}>
+      <div style={{position: 'relative'}}>
+        <RealCaseTop width={width} rotation={baseRot + clicksSoFar(f, clicks) * 32} clicks={clicks} glow={1} arrows={arrows} />
+        <ClickPops clicks={clicks} label={label} labels={labels} symbol={symbol} x={width * 0.72} y={width * 0.22} />
+      </div>
+    </Bottom>
+  );
+};
+
+// ═══════════════════════════ HERO (~30 s) ═══════════════════════════
+
+const DROP = 270;
+const CLARIFY_AT = DROP + 62;
+const MONTAGE_AT = CLARIFY_AT + 70;
+const SEG = Math.round(BEAT * 2); // 55
+const KINDS: {kind: ScreenKind; symbol: string; hud: string; pop: string; level?: boolean}[] = [
+  {kind: 'scroll', symbol: 'arrow.up.and.down', hud: 'Scroll', pop: 'arrow.down'},
+  {kind: 'slides', symbol: 'play.rectangle.fill', hud: 'Slides', pop: 'arrow.right'},
+  {kind: 'video', symbol: 'film', hud: 'Video Seek', pop: 'forward.fill'},
+  {kind: 'brightness', symbol: 'sun.max.fill', hud: 'Brightness', pop: 'sun.min.fill', level: true},
+  {kind: 'volume', symbol: 'speaker.wave.2.fill', hud: 'Volume', pop: 'speaker.plus.fill', level: true},
 ];
-export const HERO2_LEN = 770;
+const RADIAL_AT = MONTAGE_AT + KINDS.length * SEG;
+const FEAT_AT = RADIAL_AT + 80;
+const END_AT = FEAT_AT + 82;
+export const HERO2_LEN = END_AT + 80;
 
 export const Hero2: React.FC<{lang: Lang}> = ({lang}) => {
   const f = useCurrentFrame();
   const t = copy2[lang];
-  const beats = beatGrid(DROP, 21, BEAT);
-  const RADIAL_AT = MONTAGE_AT + KINDS.length * SEG; // 538
-  const FEAT_AT = RADIAL_AT + Math.round(BEAT * 2.5); // 607
-  const END_AT = FEAT_AT + Math.round(BEAT * 2.2); // 668
+  const beats = beatGrid(DROP, 26, BEAT);
 
-  // Intro dial clicks (quiet part), then a fast build-up spin.
-  const introClicks = [94, 108, 122];
-  const buildSpin = interpolate(f, [176, DROP], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
-  const introRot = clicksSoFar(f, introClicks) * 24 + Math.pow(buildSpin, 2.2) * 540;
+  // Before the drop: volume clicks while "music volume" is on screen, then a build-up spin.
+  const volClicks = [100, 112, 124];
+  const build = interpolate(f, [214, DROP], [0, 1], clamp);
+  const introRot = clicksSoFar(f, volClicks) * 26 + Math.pow(build, 2.2) * 720;
+  const sad = interpolate(f, [150, 168, 200, 210], [0, 1, 1, 0], clamp);
+  const clarifyClicks = clicksAt(CLARIFY_AT + 18, 3);
 
   return (
     <AbsoluteFill style={{backgroundColor: C.bg0}}>
       <Music dropAt={DROP} total={HERO2_LEN} />
 
-      {/* ── Intro (before the drop) ── */}
+      {/* ── Owner hook ── */}
       {f < DROP ? (
-        <Camera push={0.08} shake={buildSpin * 6}>
-          <Background glowY={0.6} intensity={0.6 + buildSpin} />
+        <Scene push={0.1} shake={build * 7} glowY={0.62} intensity={0.55 + build * 1.2}>
           <Top>
             <Eyebrow text={t.eyebrow} at={4} out={DROP - 6} />
-            {show(f, 8, 72) ? <Slam text={t.own1} at={10} size={104} hot={['CMF', 'Buds', 'Pro', '2']} out={66} /> : null}
-            {show(f, 70, 142) ? <Slam text={t.own2} at={72} size={88} hot={['volume', 'volume…', 'gaanon']} out={136} /> : null}
-            {show(f, 140, 178) ? <Slam text={t.own3} at={142} size={104} out={172} /> : null}
-            {show(f, 176, DROP) ? <Slam text={t.build} at={176} size={92} hot={['Mac', 'Mac?']} /> : null}
+            {show(f, 8, 80) ? (
+              <>
+                <Words text={t.own1} at={8} size={104} hot={t.own1Hot} out={70} />
+                <Sub text={t.own1Sub} at={26} out={70} />
+              </>
+            ) : null}
+            {show(f, 78, 150) ? (
+              <>
+                <Words text={t.own2} at={80} size={86} hot={t.own2Hot} out={142} />
+                <Sub text={t.own2Sub} at={98} out={142} />
+              </>
+            ) : null}
+            {show(f, 148, 208) ? (
+              <>
+                <Words text={t.own3} at={150} size={104} out={200} />
+                <Sub text={t.own3Sub} at={162} out={200} />
+              </>
+            ) : null}
+            {show(f, 206, DROP) ? (
+              <>
+                <Words text={t.build} at={208} size={90} hot={t.buildHot} />
+                <Sub text={t.buildSub} at={226} />
+              </>
+            ) : null}
           </Top>
-          {f < 72 ? (
-            <Center y={240}>
-              <div style={{opacity: fade(f, 0, 72), transform: `translateY(${interpolate(f, [0, 30], [80, 0], {extrapolateRight: 'clamp'})}px)`}}>
-                <RealCaseSide width={860} tiltY={interpolate(f, [0, 72], [-22, 8])} tiltX={interpolate(f, [0, 72], [12, 4])} />
+          {f < 80 ? (
+            <Center y={300}>
+              <div style={{opacity: interpolate(f, [0, 8, 72, 80], [0, 1, 1, 0], clamp), transform: `translateY(${interpolate(f, [0, 30], [140, 0], {...clamp, easing: (x) => 1 - Math.pow(1 - x, 3)})}px) scale(${interpolate(f, [0, 80], [0.9, 1.05])})`}}>
+                <RealCaseSide width={900} tiltY={interpolate(f, [0, 80], [-70, 25])} tiltX={interpolate(f, [0, 80], [14, 0])} dial={f * 1.2} />
               </div>
             </Center>
           ) : (
-            <Center y={260}>
+            <Center y={320}>
               <div
                 style={{
-                  opacity: fade(f, 70, DROP + 2),
-                  transform: `scale(${interpolate(f, [70, 100, 140, 178, DROP], [0.85, 1, 1, 0.92, 1.25], {extrapolateRight: 'clamp'})})`,
-                  filter: show(f, 140, 178) ? `grayscale(${interpolate(f, [140, 156], [0, 0.85], {extrapolateRight: 'clamp'})})` : undefined,
+                  opacity: interpolate(f, [78, 86], [0, 1], clamp),
+                  transform: `scale(${interpolate(f, [78, 96, 150, 170, 214, DROP], [0.7, 1, 1, 0.86, 0.95, 1.3], clamp)}) rotate(${sad * -8}deg)`,
+                  filter: sad > 0 ? `grayscale(${sad * 0.9}) brightness(${1 - sad * 0.25})` : undefined,
                 }}
               >
-                <RealCaseTop width={700} rotation={introRot} clicks={introClicks} glow={0.4 + buildSpin * 1.6} />
+                <div style={{position: 'relative'}}>
+                  <RealCaseTop width={720} rotation={introRot} clicks={volClicks} glow={0.4 + build * 1.8} arrows={f < 150 || f > 214 ? 1 : 0} />
+                  <ClickPops clicks={volClicks} labels={['Vol +', 'Vol +', 'Vol −']} symbol="speaker.wave.2.fill" x={500} y={150} />
+                </div>
               </div>
             </Center>
           )}
-          {introClicks.map((a) => (
-            <Sfx key={a} at={a} name="click" volume={0.55} />
-          ))}
-        </Camera>
+          <SfxList ats={[8, 80, 150, 208]} name="whoosh" volume={0.25} />
+          <SfxList ats={volClicks} name="click" volume={0.55} />
+        </Scene>
       ) : null}
 
-      {/* ── Drop: "It can now." + logo ── */}
-      {show(f, DROP, 268) ? (
-        <Camera beats={beats} push={0.06} from={DROP}>
-          <Background glowY={0.45} intensity={1.6} />
-          <Center y={-120}>
-            <div style={{opacity: interpolate(f, [DROP + 22, DROP + 28], [1, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'})}}>
-              <Slam text={t.drop} at={DROP} size={150} color={C.accent} />
+      {/* ── Drop: "It can now." → logo ── */}
+      {show(f, DROP, CLARIFY_AT) ? (
+        <Scene beats={beats} from={DROP} push={0.07} glowY={0.45} intensity={1.7}>
+          <Rays at={DROP} y={860} length={46} />
+          <Center y={-140}>
+            <div style={{opacity: interpolate(f, [DROP + 20, DROP + 26], [1, 0], clamp)}}>
+              <Words text={t.drop} at={DROP} size={150} stagger={2} color={C.accent} />
             </div>
           </Center>
-          <Center y={-40}>
-            <div style={{opacity: f >= DROP + 24 ? 1 : 0, display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
-              <LogoBlock at={DROP + 24} />
+          <Center y={-60}>
+            <div style={{opacity: f >= DROP + 22 ? 1 : 0, display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
+              <LogoBlock at={DROP + 22} tagline={t.tagline} />
             </div>
           </Center>
-          <div style={{position: 'absolute', left: 540, top: 880}}>
-            <Ring at={DROP} x={0} y={0} size={500} length={22} width={14} />
-            <Ring at={DROP + 4} x={0} y={0} size={300} length={22} width={8} color="white" />
+          <div style={{position: 'absolute', left: 540, top: 860}}>
+            <Ring at={DROP} x={0} y={0} size={520} length={24} width={16} />
+            <Ring at={DROP + 4} x={0} y={0} size={320} length={22} width={8} color="white" />
+            <Ring at={DROP + 22} x={0} y={-60} size={420} length={20} width={10} />
           </div>
-        </Camera>
+        </Scene>
       ) : null}
       <Flash at={DROP} length={12} />
       <Sfx at={DROP} name="boom" volume={0.7} />
+      <Sfx at={DROP + 22} name="pop" volume={0.5} />
 
-      {/* ── Clarify: a free Mac app for your CMF dial ── */}
-      {show(f, 268, MONTAGE_AT) ? (
-        <Camera beats={beats} push={0.05} from={268}>
-          <Background glowY={0.62} intensity={1.2} />
-          <Top>
-            <Slam text={t.clarify} at={270} size={88} hot={['free', 'CMF']} />
-          </Top>
-          <Center y={250}>
-            <div style={{transform: `scale(${0.9 + 0.1 * sp(f, 270)})`}}>
-              <RealCaseTop width={680} rotation={clicksSoFar(f, [284, 298, 312]) * 30} clicks={[284, 298, 312]} glow={1.3} />
-            </div>
-          </Center>
-          {[284, 298, 312].map((a) => (
-            <Sfx key={a} at={a} name="click" volume={0.4} />
-          ))}
-        </Camera>
+      {/* ── A free Mac app for your CMF dial ── */}
+      {show(f, CLARIFY_AT, MONTAGE_AT) ? (
+        <Whip inAt={CLARIFY_AT} outAt={MONTAGE_AT}>
+          <Scene beats={beats} from={CLARIFY_AT} glowY={0.62}>
+            <Top>
+              <Words text={t.clarify} at={CLARIFY_AT + 2} size={78} hot={t.clarifyHot} />
+              <Sub text={t.clarifySub} at={CLARIFY_AT + 16} />
+            </Top>
+            <Center y={300}>
+              <div style={{position: 'relative', transform: `scale(${0.8 + 0.2 * sp(f, CLARIFY_AT + 4, 10)})`}}>
+                <RealCaseTop width={700} rotation={clicksSoFar(f, clarifyClicks) * 30} clicks={clarifyClicks} glow={1.3} arrows={1} />
+                <ClickPops clicks={clarifyClicks} labels={['Scroll', 'Slides', 'Video']} x={490} y={150} />
+              </div>
+            </Center>
+          </Scene>
+        </Whip>
       ) : null}
+      <Sfx at={CLARIFY_AT} name="whoosh" volume={0.35} />
+      <SfxList ats={clarifyClicks} name="click" volume={0.45} />
 
-      {/* ── Montage: one mode per 1.5 beats, whip transitions ── */}
+      {/* ── Five modes, one per two beats ── */}
       {KINDS.map((m, i) => {
         const a = MONTAGE_AT + i * SEG;
         if (!show(f, a - 1, a + SEG + 1)) return null;
-        const clicks = [a + 4, a + 4 + HALF, a + 4 + BEAT].map(Math.round);
+        const clicks = clicksAt(a + 10, 4);
         const steps = clicksSoFar(f, clicks);
-        const level = m.kind === 'brightness' ? Math.max(0.15, 1 - steps * 0.25) : Math.min(1, 0.3 + steps * 0.2);
+        const level = m.kind === 'brightness' ? Math.max(0.15, 1 - steps * 0.2) : Math.min(1, 0.3 + steps * 0.17);
         return (
           <Whip key={i} inAt={a} outAt={a + SEG}>
-            <Camera beats={beats} push={0.03} from={a}>
-              <Background glowX={i % 2 ? 0.3 : 0.7} glowY={0.55} intensity={1.2} />
-              <Top y={SAFE.top - 20}>
-                <Slam text={t.montage[i]} at={a + 1} size={96} />
+            <Scene beats={beats} from={a} push={0.03} glowX={i % 2 ? 0.3 : 0.7} glowY={0.5}>
+              <Top y={SAFE.top - 30}>
+                <Words text={t.montage[i]} at={a + 1} size={92} hot={i === 0 ? ['anything', 'scroll'] : []} />
+                <Sub text={t.montageSub[i]} at={a + 9} size={40} />
               </Top>
-              <Center y={-90}>
-                <div style={{position: 'relative'}}>
-                  <MacBook kind={m.kind} steps={steps} />
-                  <div style={{position: 'absolute', left: 0, right: 0, bottom: 90, display: 'flex', justifyContent: 'center'}}>
-                    <HUD symbol={m.symbol} title={m.hud} level={m.level ? level : undefined} subtitle={m.level ? `${Math.round(level * 100)}%` : undefined} appear={sp(f, a + 4)} scale={2} />
+              <Center y={-100}>
+                <FlipIn at={a + 2} from={i % 2 ? 'left' : 'right'}>
+                  <div style={{position: 'relative'}}>
+                    <MacBook kind={m.kind} steps={steps} />
+                    <div style={{position: 'absolute', left: 0, right: 0, bottom: 90, display: 'flex', justifyContent: 'center'}}>
+                      <HUD symbol={m.symbol} title={m.hud} level={m.level ? level : undefined} subtitle={m.level ? `${Math.round(level * 100)}%` : undefined} appear={sp(f, a + 10)} scale={2} />
+                    </div>
                   </div>
-                </div>
+                </FlipIn>
               </Center>
-              <div style={{position: 'absolute', left: 0, right: 0, bottom: SAFE.bottom - 150, display: 'flex', justifyContent: 'center'}}>
-                <RealCaseTop width={430} rotation={steps * 32 + i * 50} clicks={clicks} glow={1} />
-              </div>
-            </Camera>
+              <ReactiveCase clicks={clicks} width={440} bottom={SAFE.bottom - 170} label={t.pops[i]} symbol={m.pop} baseRot={i * 50} />
+            </Scene>
           </Whip>
         );
       })}
@@ -236,9 +331,7 @@ export const Hero2: React.FC<{lang: Lang}> = ({lang}) => {
         return (
           <React.Fragment key={i}>
             <Sfx at={a} name="whoosh" volume={0.35} />
-            {[a + 4, a + 4 + HALF, a + 4 + BEAT].map((c) => (
-              <Sfx key={c} at={c} name="click" volume={0.45} />
-            ))}
+            <SfxList ats={clicksAt(a + 10, 4)} name="click" volume={0.42} />
           </React.Fragment>
         );
       })}
@@ -246,236 +339,236 @@ export const Hero2: React.FC<{lang: Lang}> = ({lang}) => {
       {/* ── Radial menu ── */}
       {show(f, RADIAL_AT, FEAT_AT) ? (
         <Whip inAt={RADIAL_AT} outAt={FEAT_AT}>
-          <Camera beats={beats} push={0.04} from={RADIAL_AT}>
-            <Background intensity={1.3} />
-            <Top y={SAFE.top - 20}>
-              <Slam text={t.radial} at={RADIAL_AT + 1} size={88} hot={['radial', 'Triple-press']} />
+          <Scene beats={beats} from={RADIAL_AT} intensity={1.3}>
+            <Top y={SAFE.top - 30}>
+              <Words text={t.radial} at={RADIAL_AT + 1} size={86} hot={t.radialHot} />
+              <Sub text={t.radialSub} at={RADIAL_AT + 14} size={40} />
             </Top>
-            <Center y={130}>
-              <RadialMenu
-                items={RADIAL}
-                highlight={clicksSoFar(f, [RADIAL_AT + 18, RADIAL_AT + 32, RADIAL_AT + 46])}
-                appear={sp(f, RADIAL_AT + 4, 12)}
-                size={880}
-              />
+            <Center y={170}>
+              <div style={{transform: `rotate(${(1 - sp(f, RADIAL_AT + 4, 12)) * -90}deg)`}}>
+                <RadialMenu items={RADIAL} highlight={clicksSoFar(f, clicksAt(RADIAL_AT + 24, 4))} appear={sp(f, RADIAL_AT + 4, 12)} size={840} />
+              </div>
             </Center>
-          </Camera>
+          </Scene>
         </Whip>
       ) : null}
       <Sfx at={RADIAL_AT} name="whoosh" volume={0.35} />
-      {[RADIAL_AT + 4, RADIAL_AT + 8, RADIAL_AT + 12].map((a) => (
-        <Sfx key={a} at={a} name="pop" volume={0.35} />
-      ))}
-      {[RADIAL_AT + 18, RADIAL_AT + 32, RADIAL_AT + 46].map((a) => (
-        <Sfx key={a} at={a} name="tick" volume={0.5} />
-      ))}
+      <SfxList ats={[RADIAL_AT + 4, RADIAL_AT + 8, RADIAL_AT + 12]} name="pop" volume={0.35} />
+      <SfxList ats={clicksAt(RADIAL_AT + 24, 4)} name="tick" volume={0.5} />
 
-      {/* ── Features ── */}
+      {/* ── 11 modes + features ── */}
       {show(f, FEAT_AT, END_AT) ? (
-        <Camera beats={beats} push={0.05} from={FEAT_AT}>
-          <Background glowY={0.5} intensity={1.3} />
-          <Center>
-            <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 30}}>
-              {t.features.map((label, i) => {
-                const at = FEAT_AT + Math.round(i * HALF);
-                return (
-                  <div key={label} style={{transform: `scale(${1.5 - 0.5 * sp(f, at, 11)})`, opacity: sp(f, at, 11)}}>
-                    <Chip symbol={['dial.medium.fill', 'person.crop.rectangle.stack', 'wand.and.stars', 'arrow.clockwise'][i]} label={label} hot={i === 0} size={56} appear={1} />
-                  </div>
-                );
-              })}
+        <Scene beats={beats} from={FEAT_AT} glowY={0.45} intensity={1.3}>
+          <Center y={-60}>
+            <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 26}}>
+              <div style={{display: 'flex', alignItems: 'baseline', gap: 24}}>
+                <Counter at={FEAT_AT + 2} to={11} size={250} />
+                <Words text={t.featHead.replace(', ', ',\n')} at={FEAT_AT + 10} size={70} />
+              </div>
+              {t.features.map((label, i) => (
+                <FlipIn key={label} at={FEAT_AT + 22 + Math.round(i * HALF)} from={i % 2 ? 'right' : 'left'}>
+                  <Chip symbol={['person.crop.rectangle.stack', 'wand.and.stars', 'arrow.clockwise'][i]} label={label} hot={i === 0} size={54} appear={1} />
+                </FlipIn>
+              ))}
             </div>
           </Center>
-        </Camera>
+        </Scene>
       ) : null}
-      {[0, 1, 2, 3].map((i) => (
-        <Sfx key={i} at={FEAT_AT + i * HALF} name="pop" volume={0.35} />
-      ))}
+      <Sfx at={FEAT_AT} name="whoosh" volume={0.35} />
+      <SfxList ats={[0, 1, 2].map((i) => FEAT_AT + 22 + Math.round(i * HALF))} name="pop" volume={0.35} />
 
-      {/* ── End ── */}
       {f >= END_AT ? <End lang={lang} at={END_AT} beats={beats} /> : null}
       <Flash at={END_AT} length={8} color={C.accent} />
+      <Sfx at={END_AT} name="boom" volume={0.45} />
     </AbsoluteFill>
   );
 };
 
-const LogoBlock: React.FC<{at: number}> = ({at}) => {
-  const f = useCurrentFrame();
-  const p = sp(f, at, 10);
-  const n = sp(f, at + 6);
-  return (
-    <>
-      <AppIcon size={300} style={{transform: `scale(${0.3 + 0.7 * p}) rotate(${(1 - p) * -120}deg)`}} />
-      <div style={{fontFamily: font, fontWeight: 900, fontSize: 170, color: 'white', letterSpacing: -8, marginTop: 10, opacity: n, transform: `translateY(${(1 - n) * 60}px)`}}>
-        Dialed
-      </div>
-    </>
-  );
-};
+// ═══════════════════════════ Radial short (~13 s) ═══════════════════════════
 
-// ═══════════════════════════ Radial short (~12 s) ═══════════════════════════
-
-export const RADIAL2_LEN = 372;
+const RD = 84; // drop
+const R_TURNS = clicksAt(RD + 30, 3, BEAT);
+const R_PRESS = Math.round(RD + 30 + BEAT * 3);
+const R_SCROLL = R_PRESS + 20;
+const R_SCROLL_CLICKS = clicksAt(R_SCROLL + 14, 4);
+const R_END = R_SCROLL + 76;
+export const RADIAL2_LEN = R_END + 85;
 
 export const Radial2: React.FC<{lang: Lang}> = ({lang}) => {
   const f = useCurrentFrame();
   const t = copy2[lang];
-  const D = 66; // drop
-  const beats = beatGrid(D, 12, BEAT);
-  const triple = [24, 30, 36];
-  const turns = [D + 28, D + 28 + BEAT, D + 28 + BEAT * 2].map(Math.round);
-  const pressAt = Math.round(D + 28 + BEAT * 3);
-  const SCROLL_AT = pressAt + 18;
-  const scrollClicks = [SCROLL_AT + 14, SCROLL_AT + 28, SCROLL_AT + 42, SCROLL_AT + 56];
-  const END_AT = SCROLL_AT + 74;
-  const hl = clicksSoFar(f, turns.slice(0, 2)) - clicksSoFar(f, [turns[2]]); // Volume → Scroll → Media → back to Scroll
+  const beats = beatGrid(RD, 14, BEAT);
+  const triple = [44, 50, 56];
+  const hl = clicksSoFar(f, R_TURNS.slice(0, 2)) - clicksSoFar(f, [R_TURNS[2]]); // Volume → Scroll → Media → Scroll
   return (
     <AbsoluteFill style={{backgroundColor: C.bg0}}>
-      <Music dropAt={D} total={RADIAL2_LEN} />
-      {f < D ? (
-        <Camera push={0.08} shake={interpolate(f, [40, D], [0, 5], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'})}>
-          <Background glowY={0.6} intensity={0.8} />
+      <Music dropAt={RD} total={RADIAL2_LEN} />
+      {f < RD ? (
+        <Scene push={0.1} shake={interpolate(f, [60, RD], [0, 6], clamp)} glowY={0.62} intensity={0.8}>
           <Top>
             <Eyebrow text={t.eyebrow} at={2} />
-            <Slam text={t.rHook} at={6} size={100} hot={['triple-press', 'Triple-press']} />
+            <Words text={t.rHook} at={6} size={100} hot={t.rHookHot} />
+            <Sub text={t.rHookSub} at={24} />
           </Top>
-          <Center y={280}>
-            <RealCaseTop width={700} rotation={0} clicks={triple} glow={1.2} />
-          </Center>
-          {triple.map((a) => (
-            <Sfx key={a} at={a} name="pop" volume={0.6} />
-          ))}
-        </Camera>
-      ) : null}
-      {show(f, D, SCROLL_AT) ? (
-        <Camera beats={beats} push={0.05} from={D}>
-          <Background intensity={1.4} />
-          <Top y={SAFE.top - 10}>{f < pressAt ? <Slam key="t" text={t.rTurn} at={D + 2} size={76} /> : <Slam key="p" text={t.rPress} at={pressAt} size={76} hot={['Press']} />}</Top>
-          <Center y={-20}>
-            <RadialMenu items={RADIAL} highlight={hl} appear={sp(f, D, 12)} chosen={interpolate(f, [pressAt, pressAt + 6, pressAt + 16], [0, 1, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'})} size={780} />
-          </Center>
-          <div style={{position: 'absolute', left: 0, right: 0, bottom: SAFE.bottom - 270, display: 'flex', justifyContent: 'center', opacity: 0.95}}>
-            <RealCaseTop width={360} rotation={clicksSoFar(f, turns) * 30} clicks={[...turns, pressAt]} />
-          </div>
-        </Camera>
-      ) : null}
-      <Flash at={D} length={10} />
-      <Sfx at={D} name="boom" volume={0.6} />
-      {turns.map((a) => (
-        <Sfx key={a} at={a} name="tick" volume={0.55} />
-      ))}
-      <Sfx at={pressAt} name="click" volume={0.7} />
-      {show(f, SCROLL_AT, END_AT) ? (
-        <Whip inAt={SCROLL_AT} outAt={END_AT}>
-          <Camera beats={beats} push={0.04} from={SCROLL_AT}>
-            <Background intensity={1.2} />
-            <Top y={SAFE.top - 10}>
-              <Slam text={t.rDone} at={SCROLL_AT + 2} size={84} hot={['scrolls.', 'scroll']} />
-            </Top>
-            <Center y={-40}>
-              <MacBook kind="scroll" steps={clicksSoFar(f, scrollClicks)} />
-            </Center>
-            <div style={{position: 'absolute', left: 0, right: 0, bottom: SAFE.bottom - 150, display: 'flex', justifyContent: 'center'}}>
-              <RealCaseTop width={430} rotation={clicksSoFar(f, scrollClicks) * 30} clicks={scrollClicks} />
+          <Center y={320}>
+            <div style={{position: 'relative', transform: `scale(${interpolate(f, [0, 14], [0.7, 1], clamp)})`}}>
+              <RealCaseTop width={720} rotation={0} clicks={triple} glow={1.2} />
+              <ClickPops clicks={triple} labels={['1', '2', '3']} x={500} y={160} />
             </div>
-          </Camera>
+          </Center>
+          <SfxList ats={triple} name="pop" volume={0.6} />
+          <Sfx at={6} name="whoosh" volume={0.25} />
+        </Scene>
+      ) : null}
+      {show(f, RD, R_SCROLL) ? (
+        <Scene beats={beats} from={RD} intensity={1.4}>
+          <Rays at={RD} y={900} length={36} />
+          <Top y={SAFE.top - 30}>
+            {f < R_PRESS ? (
+              <React.Fragment key="turn">
+                <Words text={t.rTurn} at={RD + 2} size={78} />
+                <Sub text={t.rTurnSub} at={RD + 14} size={40} />
+              </React.Fragment>
+            ) : (
+              <React.Fragment key="press">
+                <Words text={t.rPress} at={R_PRESS} size={78} hot={['Press']} />
+                <Sub text={t.rPressSub} at={R_PRESS + 6} size={40} />
+              </React.Fragment>
+            )}
+          </Top>
+          <Center y={-10}>
+            <div style={{transform: `rotate(${(1 - sp(f, RD, 12)) * -120}deg)`}}>
+              <RadialMenu items={RADIAL} highlight={hl} appear={sp(f, RD, 12)} chosen={interpolate(f, [R_PRESS, R_PRESS + 6, R_PRESS + 16], [0, 1, 0], clamp)} size={760} />
+            </div>
+          </Center>
+          <ReactiveCase clicks={[...R_TURNS, R_PRESS]} width={380} bottom={SAFE.bottom - 290} labels={['Scroll', 'Media', 'Scroll', '✓ Scroll']} />
+        </Scene>
+      ) : null}
+      <Flash at={RD} length={10} />
+      <Sfx at={RD} name="boom" volume={0.6} />
+      <SfxList ats={R_TURNS} name="tick" volume={0.55} />
+      <Sfx at={R_PRESS} name="click" volume={0.7} />
+      {show(f, R_SCROLL, R_END) ? (
+        <Whip inAt={R_SCROLL} outAt={R_END}>
+          <Scene beats={beats} from={R_SCROLL}>
+            <Top y={SAFE.top - 30}>
+              <Words text={t.rDone} at={R_SCROLL + 2} size={84} hot={t.rDoneHot} />
+              <Sub text={t.rDoneSub} at={R_SCROLL + 14} size={40} />
+            </Top>
+            <Center y={-80}>
+              <FlipIn at={R_SCROLL + 2}>
+                <MacBook kind="scroll" steps={clicksSoFar(f, R_SCROLL_CLICKS)} />
+              </FlipIn>
+            </Center>
+            <ReactiveCase clicks={R_SCROLL_CLICKS} width={440} bottom={SAFE.bottom - 170} label="Scroll" symbol="arrow.down" />
+          </Scene>
         </Whip>
       ) : null}
-      {scrollClicks.map((a) => (
-        <Sfx key={a} at={a} name="click" volume={0.45} />
-      ))}
-      {f >= END_AT ? <End lang={lang} at={END_AT} beats={beats} /> : null}
-      <Flash at={END_AT} length={8} color={C.accent} />
+      <Sfx at={R_SCROLL} name="whoosh" volume={0.35} />
+      <SfxList ats={R_SCROLL_CLICKS} name="click" volume={0.45} />
+      {f >= R_END ? <End lang={lang} at={R_END} beats={beats} /> : null}
+      <Flash at={R_END} length={8} color={C.accent} />
+      <Sfx at={R_END} name="boom" volume={0.45} />
     </AbsoluteFill>
   );
 };
 
-// ═══════════════════════════ Profiles short (~12 s) ═══════════════════════════
+// ═══════════════════════════ Profiles short (~13 s) ═══════════════════════════
 
-export const PROFILES2_LEN = 372;
+const PD = 84;
+const SEGP = Math.round(BEAT * 2); // 55
+const P_END_TEXT = PD + SEGP * 3;
+const P_END = P_END_TEXT + Math.round(BEAT * 1.6);
+export const PROFILES2_LEN = P_END + 85;
 
 export const Profiles2: React.FC<{lang: Lang}> = ({lang}) => {
   const f = useCurrentFrame();
   const t = copy2[lang];
-  const D = 66;
-  const beats = beatGrid(D, 12, BEAT);
-  const SEGP = Math.round(BEAT * 2); // 55
+  const beats = beatGrid(PD, 14, BEAT);
   const apps = [
-    {app: 'Keynote', mode: 'Slides', profile: 'Presentations', kind: 'slides' as ScreenKind, symbol: 'play.rectangle.fill'},
-    {app: 'Safari', mode: 'Scroll', profile: 'Browsing', kind: 'scroll' as ScreenKind, symbol: 'arrow.up.and.down'},
-    {app: 'QuickTime', mode: 'Video Seek', profile: 'Video', kind: 'video' as ScreenKind, symbol: 'film'},
+    {app: 'Keynote', mode: 'Slides', profile: 'Presentations', kind: 'slides' as ScreenKind, symbol: 'play.rectangle.fill', pop: 'arrow.right', popLabel: t.pops[1]},
+    {app: 'Safari', mode: 'Scroll', profile: 'Browsing', kind: 'scroll' as ScreenKind, symbol: 'arrow.up.and.down', pop: 'arrow.down', popLabel: t.pops[0]},
+    {app: 'QuickTime', mode: 'Video Seek', profile: 'Video', kind: 'video' as ScreenKind, symbol: 'film', pop: 'forward.fill', popLabel: t.pops[2]},
   ];
-  const END_TEXT = D + SEGP * 3; // 231
-  const END_AT = END_TEXT + Math.round(BEAT * 1.5);
+  const openLine = (app: string, mode: string) => (lang === 'en' ? `${t.pOpen} ${app} → ${mode} mode` : `${app} ${t.pOpen} → ${mode} mode`);
   return (
     <AbsoluteFill style={{backgroundColor: C.bg0}}>
-      <Music dropAt={D} total={PROFILES2_LEN} />
-      {f < D ? (
-        <Camera push={0.08}>
-          <Background glowY={0.6} intensity={0.8} />
+      <Music dropAt={PD} total={PROFILES2_LEN} />
+      {f < PD ? (
+        <Scene push={0.1} glowY={0.62} intensity={0.8} shake={interpolate(f, [60, PD], [0, 5], clamp)}>
           <Top>
             <Eyebrow text={t.eyebrow} at={2} />
-            <Slam text={t.pHook} at={6} size={84} hot={['CMF', 'app', 'knows', 'jaanta']} />
+            <Words text={t.pHook} at={6} size={82} hot={t.pHookHot} />
+            <Sub text={t.pHookSub} at={28} size={40} />
           </Top>
-          <Center y={300}>
-            <RealCaseSide width={820} tiltY={interpolate(f, [0, D], [18, -8])} tiltX={8} />
+          <Center y={360}>
+            <RealCaseSide width={820} tiltY={interpolate(f, [0, PD], [40, -40])} tiltX={8} dial={f * 2} />
           </Center>
-        </Camera>
+          <Sfx at={6} name="whoosh" volume={0.25} />
+        </Scene>
       ) : null}
-      <Flash at={D} length={10} />
-      <Sfx at={D} name="boom" volume={0.6} />
+      <Flash at={PD} length={10} />
+      <Sfx at={PD} name="boom" volume={0.6} />
       {apps.map((a, i) => {
-        const s = D + i * SEGP;
+        const s = PD + i * SEGP;
         if (!show(f, s - 1, s + SEGP + 1)) return null;
-        const clicks = [s + 20, s + 20 + HALF, s + 20 + BEAT].map(Math.round);
+        const clicks = clicksAt(s + 18, 3);
         return (
           <Whip key={i} inAt={s} outAt={s + SEGP}>
-            <Camera beats={beats} push={0.03} from={s}>
-              <Background glowX={i % 2 ? 0.3 : 0.7} intensity={1.2} />
-              <Top y={SAFE.top - 20}>
+            <Scene beats={beats} from={s} push={0.03} glowX={i % 2 ? 0.3 : 0.7}>
+              {i === 0 ? <Rays at={PD} y={900} length={36} /> : null}
+              <Top y={SAFE.top - 40}>
                 <div style={{display: 'flex', gap: 18}}>
-                  {apps.map((x, k) => (
-                    <Chip key={x.app} label={x.app} hot={k === i} appear={1} size={38} />
-                  ))}
+                  {apps.map((x, k) => {
+                    const p = sp(f, s + k * 3, 10);
+                    return (
+                      <div key={x.app} style={{transform: `scale(${(k === i ? 1.12 : 0.95) * (0.6 + 0.4 * p)})`, opacity: p}}>
+                        <Chip label={x.app} hot={k === i} appear={1} size={38} />
+                      </div>
+                    );
+                  })}
                 </div>
-                <Slam text={`→ ${a.mode}`} at={s + 4} size={92} color={C.accent} />
+                <Words text={`→ ${a.mode}`} at={s + 4} size={92} color={C.accent} />
+                <Sub text={openLine(a.app, a.mode)} at={s + 12} size={40} />
               </Top>
-              <Center y={40}>
-                <div style={{position: 'relative'}}>
-                  <MacBook kind={a.kind} steps={clicksSoFar(f, clicks)} />
-                  <div style={{position: 'absolute', left: 0, right: 0, bottom: 90, display: 'flex', justifyContent: 'center'}}>
-                    <HUD symbol={a.symbol} title={`Profile: ${a.profile}`} subtitle={`${a.mode} mode`} appear={sp(f, s + 8)} scale={2} />
+              <Center y={30}>
+                <FlipIn at={s + 3} from={i % 2 ? 'left' : 'right'}>
+                  <div style={{position: 'relative'}}>
+                    <MacBook kind={a.kind} steps={clicksSoFar(f, clicks)} />
+                    <div style={{position: 'absolute', left: 0, right: 0, bottom: 90, display: 'flex', justifyContent: 'center'}}>
+                      <HUD symbol={a.symbol} title={`Profile: ${a.profile}`} subtitle={`${a.mode} mode`} appear={sp(f, s + 10)} scale={2} />
+                    </div>
                   </div>
-                </div>
+                </FlipIn>
               </Center>
-              <div style={{position: 'absolute', left: 0, right: 0, bottom: SAFE.bottom - 210, display: 'flex', justifyContent: 'center'}}>
-                <RealCaseTop width={360} rotation={clicksSoFar(f, clicks) * 32 + i * 60} clicks={clicks} />
-              </div>
-            </Camera>
+              <ReactiveCase clicks={clicks} width={380} bottom={SAFE.bottom - 290} label={a.popLabel} symbol={a.pop} baseRot={i * 60} />
+            </Scene>
           </Whip>
         );
       })}
       {apps.map((_, i) => {
-        const s = D + i * SEGP;
+        const s = PD + i * SEGP;
         return (
           <React.Fragment key={i}>
             <Sfx at={s} name="whoosh" volume={0.35} />
-            {[s + 20, s + 20 + HALF, s + 20 + BEAT].map((c) => (
-              <Sfx key={c} at={c} name="click" volume={0.4} />
-            ))}
+            <SfxList ats={clicksAt(s + 18, 3)} name="click" volume={0.4} />
           </React.Fragment>
         );
       })}
-      {show(f, END_TEXT, END_AT) ? (
-        <Camera beats={beats} push={0.05} from={END_TEXT}>
-          <Background intensity={1.4} />
-          <Center>
-            <Slam text={t.pEnd} at={END_TEXT + 1} size={150} hot={['Every', 'Har', 'app.']} />
+      {show(f, P_END_TEXT, P_END) ? (
+        <Scene beats={beats} from={P_END_TEXT} intensity={1.4}>
+          <Center y={-40}>
+            <Words text={t.pEnd} at={P_END_TEXT + 1} size={150} hot={t.pEndHot} stagger={4} />
+            <div style={{marginTop: 30}}>
+              <Sub text={t.pEndSub} at={P_END_TEXT + 16} size={44} />
+            </div>
           </Center>
-        </Camera>
+        </Scene>
       ) : null}
-      {f >= END_AT ? <End lang={lang} at={END_AT} beats={beats} /> : null}
-      <Flash at={END_AT} length={8} color={C.accent} />
+      <Sfx at={P_END_TEXT} name="pop" volume={0.45} />
+      {f >= P_END ? <End lang={lang} at={P_END} beats={beats} /> : null}
+      <Flash at={P_END} length={8} color={C.accent} />
+      <Sfx at={P_END} name="boom" volume={0.45} />
     </AbsoluteFill>
   );
 };

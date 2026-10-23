@@ -3,7 +3,8 @@ import AppKit
 let names = ["speaker.wave.2.fill","arrow.up.and.down","music.note","film","sun.max.fill","plus.magnifyingglass",
              "square.on.square","play.rectangle.fill","square.grid.2x2.fill","macwindow.on.rectangle","arrow.uturn.backward",
              "circle.circle","arrow.clockwise","person.crop.rectangle.stack","wand.and.stars","heart.fill","forward.end.fill",
-             "backward.end.fill","playpause.fill","keyboard","sparkles","checkmark","dial.medium.fill","command","safari.fill"]
+             "backward.end.fill","playpause.fill","keyboard","sparkles","checkmark","dial.medium.fill","command","safari.fill",
+             "arrow.down","arrow.right","forward.fill","sun.min.fill","speaker.plus.fill"]
 let out = URL(fileURLWithPath: CommandLine.arguments[1])
 for n in names {
     let cfg = NSImage.SymbolConfiguration(pointSize: 180, weight: .semibold).applying(.init(paletteColors: [.white]))

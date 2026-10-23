@@ -20,7 +20,7 @@ export type CaseColor = keyof typeof PALETTES;
 
 const R = 0.22; // corner radius
 const DEPTH = 0.44; // case thickness
-const DIAL = {x: 0.86, y: 0.14, r: 0.235, rise: 0.055}; // dial centre, radius, height above the lid
+const DIAL = {x: 0.81, y: 0.19, r: 0.2, rise: 0.04}; // dial centre, radius, height above the lid
 
 export const CaseModel: React.FC<{
   size: number; // side of the case in px
@@ -31,7 +31,8 @@ export const CaseModel: React.FC<{
   color?: CaseColor;
   clicks?: number[];
   glow?: number;
-}> = ({size: S, dial, angle = 45, tiltX = 30, spinY = 0, color = 'light', clicks = [], glow = 0}) => {
+  arrows?: number; // 0..1: curved "turn me" arrows around the dial
+}> = ({size: S, dial, angle = 45, tiltX = 30, spinY = 0, color = 'light', clicks = [], glow = 0, arrows = 0}) => {
   const f = useCurrentFrame();
   const p = PALETTES[color];
   const layers = 56;
@@ -48,6 +49,7 @@ export const CaseModel: React.FC<{
     return t >= 0 && t < 10 ? Math.max(a, 1 - t / 10) : a;
   }, 0);
 
+  const sink = pulse * rise * 0.7; // dial dips a little when pressed
   const abs: React.CSSProperties = {position: 'absolute', left: 0, top: 0};
   return (
     <div style={{width: S, height: S, perspective: S * 4.2, position: 'relative'}}>
@@ -85,7 +87,7 @@ export const CaseModel: React.FC<{
           width: S,
           height: S,
           transformStyle: 'preserve-3d',
-          transform: `rotateX(${tiltX}deg) rotateY(${spinY}deg) rotateZ(${angle}deg)`,
+          transform: `rotateX(${tiltX}deg) rotateY(${spinY}deg) rotateZ(${angle}deg) scale3d(${1 - 0.05 * pulse}, ${1 - 0.05 * pulse}, ${1 - 0.12 * pulse})`,
         }}
       >
         {/* body: stacked slices, bottom first */}
@@ -135,11 +137,12 @@ export const CaseModel: React.FC<{
               borderRadius: '50%',
               background: `repeating-conic-gradient(from ${dial}deg, #DADBDE 0deg 2.5deg, #A4A6AB 2.5deg 5deg)`,
               filter: `brightness(${0.8 + 0.25 * (i / (dialLayers - 1))})`,
-              transform: `translateZ(${-depth * 0.14 + (i / (dialLayers - 1)) * (depth * 0.14 + rise)}px)`,
+              transform: `translateZ(${-depth * 0.14 + (i / (dialLayers - 1)) * (depth * 0.14 + rise) - sink}px)`,
             }}
           />
         ))}
-        <DialFace S={S} dial={dial} angle={angle} style={{...abs, left: dx - dr, top: dy - dr, transform: `translateZ(${rise + 1}px)`}} pulse={pulse} />
+        <DialFace S={S} dial={dial} angle={angle} style={{...abs, left: dx - dr, top: dy - dr, transform: `translateZ(${rise + 1 - sink}px)`}} pulse={pulse} />
+        {arrows > 0 ? <TurnArrows x={dx} y={dy} r={dr} z={rise + 3} opacity={arrows} spin={f * 3} /> : null}
         {/* click ripple on the lid around the dial */}
         {clicks.map((c) => (
           <Ripple key={c} at={c} x={dx} y={dy} r={dr} z={rise + 2} />
@@ -233,5 +236,41 @@ const Ripple: React.FC<{at: number; x: number; y: number; r: number; z: number}>
         transform: `translateZ(${z}px)`,
       }}
     />
+  );
+};
+
+/** Two curved arrows circling the dial, on the lid plane, slowly orbiting. */
+const TurnArrows: React.FC<{x: number; y: number; r: number; z: number; opacity: number; spin: number}> = ({x, y, r, z, opacity, spin}) => {
+  const R2 = r * 1.45;
+  const size = R2 * 2 + r;
+  const c = size / 2;
+  const arc = (from: number, to: number) => {
+    const a0 = (from * Math.PI) / 180;
+    const a1 = (to * Math.PI) / 180;
+    return `M ${c + R2 * Math.cos(a0)} ${c + R2 * Math.sin(a0)} A ${R2} ${R2} 0 0 1 ${c + R2 * Math.cos(a1)} ${c + R2 * Math.sin(a1)}`;
+  };
+  const head = (at: number) => {
+    const a = (at * Math.PI) / 180;
+    const px = c + R2 * Math.cos(a);
+    const py = c + R2 * Math.sin(a);
+    const t = a + Math.PI / 2; // tangent (clockwise)
+    const L = r * 0.32;
+    const p1 = [px - L * Math.cos(t - 0.5), py - L * Math.sin(t - 0.5)];
+    const p2 = [px - L * Math.cos(t + 0.5), py - L * Math.sin(t + 0.5)];
+    return `M ${p1[0]} ${p1[1]} L ${px} ${py} L ${p2[0]} ${p2[1]}`;
+  };
+  return (
+    <svg
+      width={size}
+      height={size}
+      style={{position: 'absolute', left: x - c, top: y - c, opacity, transform: `translateZ(${z}px) rotate(${spin}deg)`, overflow: 'visible', filter: `drop-shadow(0 0 ${r * 0.15}px ${C.accent})`}}
+    >
+      {[0, 180].map((o) => (
+        <g key={o} fill="none" stroke={C.accent} strokeWidth={r * 0.09} strokeLinecap="round" strokeLinejoin="round">
+          <path d={arc(o - 20, o + 55)} />
+          <path d={head(o + 55)} />
+        </g>
+      ))}
+    </svg>
   );
 };
