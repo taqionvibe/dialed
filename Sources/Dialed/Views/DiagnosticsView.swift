@@ -17,6 +17,10 @@ struct DiagnosticsView: View {
                 linkCard
             }
             GestureLights(diagnostics: diagnostics)
+            Label("No turns arriving? Turning may be locked — press the dial once, then hold, to unlock it. Holds themselves never reach the Mac.",
+                  systemImage: "lightbulb")
+                .font(.caption).foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
             logCard
         }
         .padding(18)

@@ -167,7 +167,7 @@ struct OnboardingView: View {
                     Divider()
                     gestureRow("Triple press", "Previous track", "Required — opens the radial menu. Low lag mode etc. never reach the Mac", .green)
                     Divider()
-                    gestureRow("Press and hold", "Anything", "Not available on macOS", .secondary)
+                    gestureRow("Press and hold", "Anything", "Stays in the buds (e.g. noise cancellation)", .secondary)
                     Divider()
                     gestureRow("Turn", "Volume (default)", "Required", .green)
                 }

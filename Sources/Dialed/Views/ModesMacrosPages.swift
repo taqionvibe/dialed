@@ -235,35 +235,128 @@ struct MacrosPage: View {
 // MARK: - About
 
 struct AboutPage: View {
+    private let repo = URL(string: "https://github.com/taqionvibe/dialed")!
+    private let issues = URL(string: "https://github.com/taqionvibe/dialed/issues/new")!
+
     var body: some View {
-        Form {
-            Section {
-                HStack(spacing: 16) {
-                    Image(nsImage: AppIconImage.image).resizable().frame(width: 72, height: 72).accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Dialed").font(.title.weight(.semibold))
-                        Text("Version \(Bundle.main.shortVersion)").foregroundStyle(.secondary)
-                        Text("The CMF Buds Pro 2 Smart Dial, as a Mac controller.").foregroundStyle(.secondary)
-                        MadeWithLove(font: .callout).padding(.top, 2)
+        ScrollView {
+            VStack(spacing: 18) {
+                hero
+                maker
+                links
+                Card {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Label("Tested on real hardware", systemImage: "checkmark.seal.fill")
+                            .font(.headline).foregroundStyle(Theme.accent)
+                        HardwareFactsView()
                     }
                 }
-                .padding(.vertical, 6)
+                HStack(alignment: .top, spacing: 18) {
+                    infoCard("Privacy", "lock.shield.fill",
+                             "Dialed runs entirely on your Mac and sends nothing anywhere. It reads the buds’ volume level and media commands, and posts the keys and scrolls you configure.")
+                    infoCard("Acknowledgements", "heart.text.square.fill",
+                             "Dial research from [Orbit](https://github.com/harsha20599/orbit) by harsha20599 (MIT). Updates by [Sparkle](https://sparkle-project.org) (MIT). Not affiliated with Nothing or CMF.")
+                }
             }
-            Section("Tested on real hardware") {
-                HardwareFactsView()
+            .padding(24)
+            .frame(maxWidth: 720)
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    private var hero: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(LinearGradient(colors: [Color(red: 0.13, green: 0.13, blue: 0.15), Color(red: 0.07, green: 0.07, blue: 0.08)],
+                                     startPoint: .top, endPoint: .bottom))
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(RadialGradient(colors: [Theme.accent.opacity(0.45), .clear], center: .top, startRadius: 4, endRadius: 260))
+            VStack(spacing: 10) {
+                Image(nsImage: AppIconImage.image)
+                    .resizable().frame(width: 104, height: 104)
+                    .shadow(color: .black.opacity(0.4), radius: 14, y: 6)
+                    .accessibilityHidden(true)
+                Text("Dialed").font(.system(size: 34, weight: .bold)).foregroundStyle(.white)
+                Text("The CMF Buds Pro 2 Smart Dial, as a Mac controller.")
+                    .font(.callout).foregroundStyle(.white.opacity(0.7))
+                Text("Version \(Bundle.main.shortVersion)")
+                    .font(.caption.weight(.semibold).monospacedDigit())
+                    .foregroundStyle(.white.opacity(0.85))
+                    .padding(.horizontal, 10).padding(.vertical, 4)
+                    .background(.white.opacity(0.1), in: Capsule())
             }
-            Section("Privacy") {
-                Text("Dialed runs entirely on your Mac and sends nothing anywhere. It reads the buds’ volume level and media commands, and posts the keys and scrolls you configure.")
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Section("Credits") {
-                Text("Dial decoding is based on research from [Orbit](https://github.com/harsha20599/orbit) by harsha20599 (MIT License). Dialed is not affiliated with or endorsed by Nothing or CMF.")
-                    .fixedSize(horizontal: false, vertical: true)
-                Link("Dialed on GitHub", destination: URL(string: "https://github.com/taqionvibe/dialed")!)
-                Link("taqisaeed.com", destination: MadeWithLove.website)
-                Button("Open Diagnostics") { WindowManager.shared.showDiagnostics() }
+            .padding(.vertical, 28)
+        }
+        .environment(\.colorScheme, .dark)
+    }
+
+    private var maker: some View {
+        Card {
+            HStack(spacing: 16) {
+                ZStack {
+                    Circle().fill(Theme.accent.gradient)
+                    Text("TS").font(.system(size: 22, weight: .bold, design: .rounded)).foregroundStyle(.white)
+                }
+                .frame(width: 58, height: 58)
+                .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 5) {
+                        Text("Made with")
+                        Image(systemName: "heart.fill").foregroundStyle(Theme.accent)
+                        Text("by")
+                    }
+                    .font(.callout).foregroundStyle(.secondary)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("Made with love by")
+                    Text("Taqi Saeed").font(.title2.weight(.semibold))
+                    Text("taqisaeed.com").font(.callout).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Link(destination: MadeWithLove.website) {
+                    Label("Visit Website", systemImage: "arrow.up.right")
+                        .font(.callout.weight(.semibold))
+                        .padding(.horizontal, 14).padding(.vertical, 8)
+                        .foregroundStyle(.white)
+                        .background(Theme.accent.gradient, in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .help("Open taqisaeed.com")
             }
         }
-        .formStyle(.grouped)
+    }
+
+    private var links: some View {
+        HStack(spacing: 12) {
+            linkTile("GitHub", "chevron.left.forwardslash.chevron.right") { NSWorkspace.shared.open(repo) }
+            linkTile("Report an Issue", "exclamationmark.bubble.fill") { NSWorkspace.shared.open(issues) }
+            if UpdaterModel.shared.isAvailable {
+                linkTile("Check for Updates", "arrow.down.circle.fill") { UpdaterModel.shared.checkForUpdates() }
+            }
+            linkTile("Diagnostics", "waveform.path.ecg") { WindowManager.shared.showDiagnostics() }
+        }
+    }
+
+    private func linkTile(_ title: String, _ symbol: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Image(systemName: symbol).font(.system(size: 18, weight: .semibold)).foregroundStyle(Theme.accent)
+                Text(title).font(.callout.weight(.medium)).foregroundStyle(.primary)
+            }
+            .frame(maxWidth: .infinity, minHeight: 74)
+            .background(.background.secondary, in: RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous).strokeBorder(.separator.opacity(0.6), lineWidth: 0.5))
+            .contentShape(RoundedRectangle(cornerRadius: Theme.cornerRadius))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func infoCard(_ title: String, _ symbol: String, _ text: LocalizedStringKey) -> some View {
+        Card {
+            VStack(alignment: .leading, spacing: 8) {
+                Label(title, systemImage: symbol).font(.headline)
+                Text(text).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxHeight: .infinity, alignment: .top)
     }
 }
