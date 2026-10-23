@@ -16,7 +16,7 @@ Per-app profiles, custom modes, macros and Apple Shortcuts. Native Swift, menu b
 
 ## Install
 
-1. Download **Dialed.zip** from the [latest release](https://github.com/taqionvibe/dialed/releases/latest)
+1. Download **Dialed.zip** from the [Releases page](https://github.com/taqionvibe/dialed/releases)
    (or the `Dialed-app` artifact of the newest CI run), unzip it and drag **Dialed.app** to
    **Applications**.
 2. The first time, **right-click Dialed → Open** (the app isn't notarized).
