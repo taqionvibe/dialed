@@ -1,0 +1,6 @@
+node_modules/
+out/
+
+
+# Mixkit licence allows use in videos, not redistributing the file — download it (see README)
+public/music/
