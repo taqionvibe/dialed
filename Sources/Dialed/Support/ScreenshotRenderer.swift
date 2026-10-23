@@ -73,6 +73,59 @@ enum ScreenshotRenderer {
         hud.content = HUDContent(symbol: "play.rectangle.fill", title: "Slides", subtitle: "→")
         await capture(Backdrop { HUDView(model: hud) }, size: CGSize(width: 560, height: 170),
                       name: "hud-slides", dir: dir, appearance: .darkAqua, rounded: false)
+
+        // README hero banner built from the real radial menu and HUD views.
+        let bannerHUD = HUDModel()
+        bannerHUD.content = HUDContent(symbol: "arrow.up.and.down", title: "Scroll", subtitle: "Turn to scroll smoothly")
+        bannerHUD.visible = true
+        await capture(Banner(radial: model, hud: bannerHUD), size: CGSize(width: 1280, height: 560),
+                      name: "banner", dir: dir, appearance: .darkAqua, rounded: false)
+    }
+
+    /// The README hero: product name and pitch on the left, the live radial menu on the right.
+    private struct Banner: View {
+        let radial: RadialModel
+        let hud: HUDModel
+
+        var body: some View {
+            ZStack {
+                LinearGradient(colors: [Color(red: 0.09, green: 0.09, blue: 0.11), Color(red: 0.16, green: 0.15, blue: 0.18)],
+                               startPoint: .top, endPoint: .bottom)
+                RadialGradient(colors: [Theme.accent.opacity(0.35), .clear], center: UnitPoint(x: 0.74, y: 0.5),
+                               startRadius: 10, endRadius: 420)
+                HStack(spacing: 0) {
+                    VStack(alignment: .leading, spacing: 18) {
+                        HStack(spacing: 16) {
+                            Image(nsImage: AppIconImage.image).resizable().frame(width: 84, height: 84)
+                            Text("Dialed").font(.system(size: 64, weight: .bold)).foregroundStyle(.white)
+                        }
+                        Text("The Smart Dial on your CMF Buds Pro 2 case,\nnow a controller for your Mac.")
+                            .font(.system(size: 26, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.78))
+                            .fixedSize(horizontal: false, vertical: true)
+                        HStack(spacing: 10) {
+                            ForEach(["11 modes", "Radial menu", "Per-app profiles", "Macros"], id: \.self) { chip in
+                                Text(chip)
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundStyle(.white.opacity(0.9))
+                                    .padding(.horizontal, 14).padding(.vertical, 8)
+                                    .background(.white.opacity(0.08), in: Capsule())
+                                    .overlay(Capsule().strokeBorder(.white.opacity(0.14)))
+                            }
+                        }
+                        .padding(.top, 6)
+                    }
+                    .padding(.leading, 80)
+                    Spacer()
+                    ZStack(alignment: .bottom) {
+                        RadialMenuView(model: radial).scaleEffect(0.95)
+                        HUDView(model: hud).scaleEffect(0.85).offset(y: 46)
+                    }
+                    .frame(width: 520, height: 560)
+                    .padding(.trailing, 50)
+                }
+            }
+        }
     }
 
     /// A wallpaper-like gradient so translucent overlays read as they do on screen.

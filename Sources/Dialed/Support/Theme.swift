@@ -83,3 +83,12 @@ struct FormNote: View {
             .fixedSize(horizontal: false, vertical: true)
     }
 }
+
+/// The app icon, also when running as a bare binary (render mode, `swift run`).
+enum AppIconImage {
+    static var image: NSImage {
+        if Bundle.main.bundleURL.pathExtension == "app" { return NSApp.applicationIconImage }
+        let local = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("Resources/AppIcon.icns")
+        return NSImage(contentsOf: local) ?? NSApp.applicationIconImage
+    }
+}
