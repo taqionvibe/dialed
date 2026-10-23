@@ -53,8 +53,8 @@
       Single press pauses your real player, double press skips — YouTube Music, Spotify, Music, browsers.
     </td>
     <td valign="top">
-      <h3>🛡️ Thoughtful by default</h3>
-      Fast-spin boost, accidental-turn guard, sleep/wake and reconnect handling, and a one-click off switch.
+      <h3>🔄 Updates itself</h3>
+      Checks for new versions daily and installs them — every update is signed. Plus fast-spin boost, accidental-turn guard and a one-click off switch.
     </td>
   </tr>
 </table>
@@ -67,7 +67,7 @@
 
 ## 🚀 Get started
 
-**1. Install.** Download **[Dialed.dmg](https://github.com/taqionvibe/dialed/releases/latest/download/Dialed.dmg)**, open it and drag Dialed to Applications. The first time, **right-click Dialed → Open** (the app isn't notarized yet). Prefer a zip? It's on the [Releases page](https://github.com/taqionvibe/dialed/releases).
+**1. Install.** Download **[Dialed.dmg](https://github.com/taqionvibe/dialed/releases/latest/download/Dialed.dmg)**, open it and drag Dialed to Applications. The first time, **right-click Dialed → Open** (the app isn't notarized yet). Prefer a zip? It's on the [Releases page](https://github.com/taqionvibe/dialed/releases). From then on Dialed **updates itself** (Settings → General → Updates).
 
 **2. Set up the dial in Nothing X.** Open **CMF Buds Pro 2 → Controls → Dial**:
 
@@ -77,7 +77,7 @@
 | Double press | **Next track** | next song |
 | Triple press | **Previous track** | opens the radial menu |
 | Turn | **Volume** (default) | drives the current mode |
-| Press and hold | anything | ⚠️ never reaches macOS |
+| Press and hold | anything (e.g. noise cancellation) | ⚠️ stays in the buds, never reaches macOS |
 
 > Triple press only reaches the Mac when it's set to **Previous track** — "Low lag mode" or "No action" send nothing.
 
@@ -140,6 +140,8 @@
 - **Now Playing.** macOS only sends the buds' presses to the app shown under Now Playing, so Dialed appears there while it's on. It leaves when the buds go in the case.
 - **Fast spins.** The buds report about one click every half second while spinning and drop the rest; Dialed boosts fast spins to make up for it.
 - **Stray clicks.** After a pause, the first click is ignored in modes where it would matter (Undo, Tabs, App Switcher, Windows, Media).
+- **Holds stay in the buds.** Hold (noise cancellation) and press-then-hold (locks turning) are handled by the buds and never reach the Mac. If turning does nothing, the dial may be locked.
+- **Updates** are delivered with [Sparkle](https://sparkle-project.org) and EdDSA-signed. Because the app isn't notarized, macOS may ask for Accessibility again after an update.
 - **Backups.** Export and import all settings as JSON from Settings → General.
 
 <details>
@@ -193,7 +195,7 @@ pip install dmgbuild && scripts/build-dmg.sh   # build/Dialed.dmg
 
 Swift 6 toolchain (Xcode 16+), macOS 14+. Set `SIGN_IDENTITY="Developer ID Application: …"` to sign. For local development, `STABLE_DEV_IDENTITY=1` keeps the Accessibility grant across rebuilds — never ship that build. `Dialed --render-screenshots <dir>` renders every screen to PNG without touching audio.
 
-CI runs the tests and builds a universal app and DMG on every push and pull request; `v*` tags publish a GitHub Release.
+CI runs the tests and builds a universal app and DMG on every push and pull request; `v*` tags publish a GitHub Release with the DMG, the zip and a signed `appcast.xml` (the Sparkle update feed — needs the `SPARKLE_PRIVATE_KEY` secret; the public key lives in `Resources/SparklePublicKey.txt`).
 
 </details>
 
