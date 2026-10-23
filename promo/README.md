@@ -2,7 +2,8 @@
 
 Instagram reels (1080×1920, 30 fps) made with [Remotion](https://www.remotion.dev), aimed at people who already own
 CMF Buds Pro 2: each one opens by asking whether they only use the case dial for music, then shows what Dialed does.
-The case is the real one (cut out from photos of a white CMF Buds Pro 2 case); its actual dial disc rotates on every click.
+The case is a 3D model drawn in code from CMF's product photos (`src/CaseModel.tsx`: light-grey squircle, knurled
+brushed-aluminium Smart Dial, LED ring and speaker dots); it tilts and spins, and the dial turns on every click.
 Cuts land on the beat of the music track, with synthesized sound effects on top.
 
 | Composition | Length | What it shows |
@@ -18,8 +19,8 @@ npm run render:all      # renders all six MP4s into out/
 ```
 
 - Text for both languages lives in `src/copy2.ts`; scenes and beat timing in `src/reels2.tsx`; reusable motion
-  pieces (real case, camera punch, slam text, whip, MacBook) in `src/motion.tsx`.
-- `scripts/cutout.swift` lifts the case out of a photo (Vision), `scripts/finddial.swift` crops the dial disc.
+  pieces (camera punch, slam text, whip, MacBook) in `src/motion.tsx`. The `CaseTest` composition shows the case model
+  in a few poses and colours.
 - `scripts/symbols.swift` renders the SF Symbols used for icons, `scripts/sfx.py` synthesizes the sound
   effects, `scripts/sheet.sh` makes a contact sheet of frames for review.
 - On-screen text stays inside Instagram's safe area (`SAFE` in `src/theme.ts`).

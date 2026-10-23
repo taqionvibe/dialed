@@ -1,6 +1,7 @@
 import React from 'react';
 import {Composition} from 'remotion';
 import {Hero2, HERO2_LEN, Profiles2, PROFILES2_LEN, Radial2, RADIAL2_LEN} from './reels2';
+import {CaseTest} from './CaseTest';
 import {FPS, H, W} from './theme';
 
 export const Root: React.FC = () => (
@@ -12,5 +13,6 @@ export const Root: React.FC = () => (
         <Composition id={`Profiles-${lang}`} component={Profiles2} durationInFrames={PROFILES2_LEN} fps={FPS} width={W} height={H} defaultProps={{lang}} />
       </React.Fragment>
     ))}
+    <Composition id="CaseTest" component={CaseTest} durationInFrames={1} fps={FPS} width={W} height={H} />
   </>
 );

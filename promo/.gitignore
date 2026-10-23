@@ -1,8 +1,6 @@
 node_modules/
 out/
 
-# Owner's original photos (may carry EXIF); only the cut-outs in public/photos are committed
-scripts/ref-*.jpg
 
 # Mixkit licence allows use in videos, not redistributing the file — download it (see README)
 public/music/

@@ -1,88 +1,36 @@
 import React from 'react';
-import {AbsoluteFill, Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
+import {AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig} from 'remotion';
+import {CaseColor, CaseModel} from './CaseModel';
 import {content, ScreenKind} from './MacScreen';
 import {C, font} from './theme';
 
-// ───────────── Real product photos (cut out from the owner's own photos) ─────────────
+// ───────────── The case (3D model drawn from CMF's product photos) ─────────────
 
-/** Top-view photo geometry: the silver dial disc inside case-top-hand.png. */
-const TOP = {w: 975, h: 938, cx: 166, cy: 212, r: 170};
-/** Side-view photo size. */
-const SIDE = {w: 733, h: 509};
-
-/**
- * The real CMF Buds Pro 2 case (top view) from the owner's photo. The dial disc is
- * a crop of the same photo, laid exactly over itself and rotated — so it is the
- * actual dial that turns. Adds a light sweep and click sparks.
- */
-export const RealCaseTop: React.FC<{width: number; rotation: number; clicks?: number[]; glow?: number}> = ({
+/** Case seen from above at a slight lean, dial on the right; the dial turns by `rotation`. */
+export const RealCaseTop: React.FC<{width: number; rotation: number; clicks?: number[]; glow?: number; tilt?: number; color?: CaseColor}> = ({
   width,
   rotation,
   clicks = [],
   glow = 1,
+  tilt = 30,
+  color,
 }) => {
-  const f = useCurrentFrame();
-  const s = width / TOP.w;
-  const d = TOP.r * 2 * s;
-  const x = (TOP.cx - TOP.r) * s;
-  const y = (TOP.cy - TOP.r) * s;
+  const S = width * 0.7;
   return (
-    <div style={{position: 'relative', width, height: TOP.h * s}}>
-      <div
-        style={{
-          position: 'absolute',
-          left: x - d * 0.35,
-          top: y - d * 0.35,
-          width: d * 1.7,
-          height: d * 1.7,
-          borderRadius: '50%',
-          background: `radial-gradient(circle, rgba(255,107,44,${0.55 * glow}) 0%, rgba(255,107,44,0) 62%)`,
-          filter: 'blur(10px)',
-        }}
-      />
-      <Img src={staticFile('photos/case-top-hand.png')} style={{position: 'absolute', inset: 0, width, height: TOP.h * s, filter: 'drop-shadow(0 40px 60px rgba(0,0,0,0.55))'}} />
-      <div style={{position: 'absolute', left: x, top: y, width: d, height: d, borderRadius: '50%', overflow: 'hidden', transform: `rotate(${rotation}deg)`, clipPath: 'circle(48.5%)'}}>
-        <Img src={staticFile('photos/dial-disc.png')} style={{width: d, height: d}} />
+    <div style={{width, height: width * 0.92, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+      <div style={{transform: `translateX(${-width * 0.04}px)`}}>
+        <CaseModel size={S} dial={rotation} clicks={clicks} glow={glow} tiltX={tilt} angle={45} color={color} />
       </div>
-      {/* Light sweep that stays fixed while the brushed metal turns. */}
-      <div
-        style={{
-          position: 'absolute',
-          left: x,
-          top: y,
-          width: d,
-          height: d,
-          borderRadius: '50%',
-          clipPath: 'circle(48.5%)',
-          background: `conic-gradient(from ${200 + rotation * 0.15}deg, rgba(255,255,255,0) 0deg, rgba(255,255,255,0.35) 18deg, rgba(255,255,255,0) 40deg, rgba(255,255,255,0) 180deg, rgba(255,255,255,0.18) 200deg, rgba(255,255,255,0) 225deg)`,
-          mixBlendMode: 'screen',
-        }}
-      />
-      {clicks.map((at) => (
-        <Sparks key={at} at={at} x={x + d / 2} y={y + d / 2} radius={d / 2} />
-      ))}
-      {clicks.map((at) => (
-        <Ring key={`r${at}`} at={at} x={x + d / 2} y={y + d / 2} size={d} />
-      ))}
-      {f < 0 ? null : null}
     </div>
   );
 };
 
-/** The side-view photo (knurled dial edge), with optional 3D tilt. */
-export const RealCaseSide: React.FC<{width: number; tiltY?: number; tiltX?: number}> = ({width, tiltY = 0, tiltX = 0}) => {
-  const s = width / SIDE.w;
+/** Low side view that shows the knurled dial edge; `tiltY` spins it like a turntable. */
+export const RealCaseSide: React.FC<{width: number; tiltY?: number; tiltX?: number; dial?: number}> = ({width, tiltY = 0, tiltX = 0, dial = 0}) => {
+  const S = width * 0.6;
   return (
-    <div style={{perspective: 1400}}>
-      <Img
-        src={staticFile('photos/case-side-hand.png')}
-        style={{
-          width,
-          height: SIDE.h * s,
-          transform: `rotateY(${tiltY}deg) rotateX(${tiltX}deg)`,
-          filter: 'drop-shadow(0 50px 70px rgba(0,0,0,0.6))',
-        }}
-      />
+    <div style={{width, height: width * 0.7, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+      <CaseModel size={S} dial={dial} tiltX={60 + tiltX * 0.5} angle={45 + tiltY} glow={0.6} />
     </div>
   );
 };
